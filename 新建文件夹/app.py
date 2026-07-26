@@ -49,7 +49,7 @@ for _ in range(MAX_WORKERS):
 import threading
 import logging
 import tool.u1
-from string import ascii_lowercase
+from string import ascii_lowercase,ascii_letters
 from flask import (Flask, request, jsonify, render_template_string,
                    make_response, send_from_directory, session, redirect, url_for, abort)
 import random
@@ -60,6 +60,7 @@ from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 ascii_lowercase += "0123456789"
+ascii_letters += "0123456789"
 import tool.u2
 
 # 引入 Flask-WTF CSRF 保护
@@ -73,9 +74,10 @@ if sys.platform.startswith('win'):
     try: locale.setlocale(locale.LC_ALL, 'zh_CN.UTF-8')
     except: pass
 
-def ran_str(len):
-    global ascii_lowercase
+def ran_str(len,j=ascii_lowercase):
+    
     x = ""
+    ascii_lowercase = j
     
 
     for _ in range(len):
@@ -87,11 +89,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(BASE_DIR, 'a.html')
 
 try:
-    s=open("s.key","r",encoding="utf-8")
+    s=open(os.path.join(BASE_DIR,"s.key"),"r",encoding="utf-8")
     k = s.read()
 except:
-    k = ran_str(32)
-    s= open("s.key","w",encoding="utf-8")
+    k = ran_str(128,ascii_letters)
+    s= open(os.path.join(BASE_DIR,"s.key"),"w",encoding="utf-8")
     s.write(k)
 s.close()
 
@@ -99,7 +101,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    filename="app.log"
+    filename=os.path.join(BASE_DIR,"app.log")
 )
 
 app = Flask(__name__)
