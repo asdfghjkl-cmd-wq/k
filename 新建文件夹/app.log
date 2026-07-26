@@ -1,0 +1,167 @@
+2026-07-14 15:34:35 - root - INFO - flask create ok
+2026-07-14 15:34:35 - root - INFO - flask create ok
+2026-07-14 15:35:18 - root - INFO - flask create ok
+2026-07-14 15:35:18 - root - INFO - flask create ok
+2026-07-14 15:35:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:36:19 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:36:36 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:36:38 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:37:24 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:37:26 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:38:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:56:18 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:56:45 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 15:56:56 - root - INFO - call_tool {'tool': 1, 'args': 'g'}
+2026-07-14 15:56:56 - root - ERROR - [Errno 2] No such file or directory: '/he/uploads/uploads/g/file'
+2026-07-14 16:09:58 - root - INFO - flask create ok
+2026-07-14 16:09:58 - root - INFO - flask create ok
+2026-07-14 16:24:12 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:25:41 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:02 - root - INFO - flask create ok
+2026-07-14 16:49:02 - root - INFO - flask create ok
+2026-07-14 16:49:18 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:19 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:22 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:30 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:31 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:34 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:36 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:39 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:54 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:49:59 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:00 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:02 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:10 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:50 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-14 16:50:53 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 17:56:48 - root - INFO - flask create ok
+2026-07-16 17:56:48 - root - INFO - html load ok
+2026-07-16 17:56:48 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-16 17:56:48 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-16 17:56:49 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:49] "[32mGET / HTTP/1.1[0m" 302 -
+2026-07-16 17:56:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 17:56:49 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:49] "GET /login?next=http://127.0.0.1:5000/ HTTP/1.1" 200 -
+2026-07-16 17:56:49 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-16 17:56:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 17:56:49 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:49] "GET /login HTTP/1.1" 200 -
+2026-07-16 17:56:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 17:56:51 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:51] "[32mPOST /login?next=http://127.0.0.1:5000/ HTTP/1.1[0m" 302 -
+2026-07-16 17:56:51 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:51] "GET / HTTP/1.1" 200 -
+2026-07-16 17:56:51 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:51] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 17:56:51 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:51] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-16 17:56:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 17:56:51 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:56:51] "GET /login HTTP/1.1" 200 -
+2026-07-16 17:57:25 - root - INFO - call_tool {'tool': 5, 'args': 'untitled-1.7z'}
+2026-07-16 17:57:25 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:57:25] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-16 17:57:25 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:57:25] "GET /api/task/53cf7696-0398-442e-afd7-2ff34e0e0164 HTTP/1.1" 200 -
+2026-07-16 17:58:17 - root - INFO - flask create ok
+2026-07-16 17:58:17 - root - INFO - html load ok
+2026-07-16 17:58:17 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-16 17:58:17 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-16 17:58:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:21] "GET / HTTP/1.1" 200 -
+2026-07-16 17:58:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:21] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 17:58:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-16 17:58:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 17:58:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:21] "GET /login HTTP/1.1" 200 -
+2026-07-16 17:58:31 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:31] "DELETE /api/delete/Untitled-1.7z HTTP/1.1" 200 -
+2026-07-16 17:58:31 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:31] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 17:58:43 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:43] "POST /upload HTTP/1.1" 200 -
+2026-07-16 17:58:43 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:43] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 17:58:53 - root - INFO - call_tool {'tool': 5, 'args': 'f.7z'}
+2026-07-16 17:58:53 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:53] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-16 17:58:53 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:53] "GET /api/task/b1b7ca71-b85d-4d3d-a714-ff8c1a644475 HTTP/1.1" 200 -
+2026-07-16 17:58:54 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:58:54] "GET /api/task/b1b7ca71-b85d-4d3d-a714-ff8c1a644475 HTTP/1.1" 200 -
+2026-07-16 17:59:02 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:02] "DELETE /api/delete/f.7z HTTP/1.1" 200 -
+2026-07-16 17:59:02 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:02] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/init HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:57 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:57] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:58 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:58] "POST /api/chunk/upload HTTP/1.1" 200 -
+2026-07-16 17:59:59 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:59] "POST /api/chunk/complete HTTP/1.1" 200 -
+2026-07-16 17:59:59 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 17:59:59] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 18:00:13 - root - INFO - call_tool {'tool': 5, 'args': 'a.zip'}
+2026-07-16 18:00:13 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:00:13] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-16 18:00:13 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:00:13] "GET /api/task/19c7e3df-83fe-44e9-918b-4346f1a913fd HTTP/1.1" 200 -
+2026-07-16 18:00:32 - root - INFO - exec:restart
+2026-07-16 18:00:33 - root - INFO - flask create ok
+2026-07-16 18:00:33 - root - INFO - html load ok
+2026-07-16 18:00:33 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-16 18:00:33 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-16 18:00:42 - root - INFO - flask create ok
+2026-07-16 18:00:42 - root - INFO - html load ok
+2026-07-16 18:00:42 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-16 18:00:42 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-16 18:00:48 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:00:48] "GET / HTTP/1.1" 200 -
+2026-07-16 18:00:48 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:00:48] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 18:00:48 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:00:48] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-16 18:00:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 18:00:48 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:00:48] "GET /login HTTP/1.1" 200 -
+2026-07-16 18:01:08 - root - INFO - call_tool {'tool': 5, 'args': 'a.zip'}
+2026-07-16 18:01:08 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:01:08] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-16 18:01:08 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:01:08] "GET /api/task/c5e580db-cc03-4f39-b4ba-5bf14b0062f7 HTTP/1.1" 200 -
+2026-07-16 18:02:03 - root - INFO - flask create ok
+2026-07-16 18:02:04 - root - INFO - html load ok
+2026-07-16 18:02:04 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-16 18:02:04 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-16 18:02:14 - root - INFO - call_tool {'tool': 5, 'args': 'a.zip'}
+2026-07-16 18:02:14 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:02:14] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-16 18:02:14 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:02:14] "GET /api/task/3781a521-e55a-4f82-9515-b71f3e67dfe0 HTTP/1.1" 200 -
+2026-07-16 18:07:12 - root - INFO - flask create ok
+2026-07-16 18:07:12 - root - INFO - html load ok
+2026-07-16 18:07:12 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-16 18:07:12 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-16 18:07:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:21] "GET / HTTP/1.1" 200 -
+2026-07-16 18:07:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:21] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 18:07:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-16 18:07:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-16 18:07:21 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:21] "GET /login HTTP/1.1" 200 -
+2026-07-16 18:07:36 - root - INFO - call_tool {'tool': 5, 'args': 'a.zip'}
+2026-07-16 18:07:36 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:36] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-16 18:07:36 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:36] "GET /api/task/abadb258-15bd-4833-aad9-f31d4398ff51 HTTP/1.1" 200 -
+2026-07-16 18:07:37 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:37] "GET /api/task/abadb258-15bd-4833-aad9-f31d4398ff51 HTTP/1.1" 200 -
+2026-07-16 18:07:37 - app - INFO - ½âÑ¹Íê³É: a.zip -> d:\k\ÐÂ½¨ÎÄ¼þ¼Ð\uploads\a
+2026-07-16 18:07:38 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:38] "GET /api/task/abadb258-15bd-4833-aad9-f31d4398ff51 HTTP/1.1" 200 -
+2026-07-16 18:07:38 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:38] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 18:07:41 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:41] "GET /api/files?path=a HTTP/1.1" 200 -
+2026-07-16 18:07:46 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:46] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-16 18:07:48 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:48] "DELETE /api/delete/a HTTP/1.1" 200 -
+2026-07-16 18:07:48 - werkzeug - INFO - 127.0.0.1 - - [16/Jul/2026 18:07:48] "GET /api/files?path= HTTP/1.1" 200 -
