@@ -829,10 +829,10 @@ def w():
             elif a.lower().startswith('debug'):
                 ddd = a.lower().replace("debug","").strip()
                 if ddd == "open":
-                    create_file("de.lock")
+                    create_file(os.path.join(BASE_DIR,"de.lock"))
                     restart_service()
                 elif ddd == "close":
-                    os.remove("./de.lock")
+                    os.remove(os.path.join(BASE_DIR,"de.lock"))
                     restart_service()
             elif a.lower() == "restart":
                  restart_service()
@@ -847,7 +847,7 @@ def w():
 
 if __name__ == '__main__':
     print(f"🌐 启动：http://0.0.0.0:5000",flush=True)
-    if os.path.exists("./de.lock"):
+    if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
         app.debug = True
 
     s = threading.Thread(target=w,daemon=True)
