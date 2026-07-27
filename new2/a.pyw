@@ -13,13 +13,12 @@ import faulthandler
 from ls import *  # ClipboardMonitor, OperationClipboard, clipboard_lock
 
 # ---------- 全局日志 ----------
-LOG_FILE = "crash.log"
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"clash.log")
 open(LOG_FILE, "w").close()
 faulthandler.enable(file=open(LOG_FILE, "a"))
 
 def log(msg):
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{time.strftime('%H:%M:%S')} {msg}\n")
+    pass
 
 def log_exception(exc_type, exc_value, exc_tb):
     log(f"UNCAUGHT EXCEPTION: {''.join(traceback.format_exception(exc_type, exc_value, exc_tb))}")
