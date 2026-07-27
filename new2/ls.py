@@ -6,19 +6,7 @@ from win32clipboard import (GetClipboardData, OpenClipboard, CloseClipboard,
                             EmptyClipboard, SetClipboardData, EnumClipboardFormats, error)
 from PIL import Image, ImageGrab
 
-
 WM_CLIPBOARDUPDATE = 0x031D
-
-class MSG(ctypes.Structure):
-    _fields_ = [
-        ("hwnd",    wintypes.HWND),
-        ("message", wintypes.UINT),
-        ("wParam",  wintypes.WPARAM),
-        ("lParam",  wintypes.LPARAM),
-        ("time",    wintypes.DWORD),
-        ("pt_x",    wintypes.LONG),
-        ("pt_y",    wintypes.LONG),
-    ]
 
 class ClipboardMonitor:
     def __init__(self, queue):
@@ -35,7 +23,7 @@ class ClipboardMonitor:
             except Exception as e:
                 print(f"队列写入失败: {e}")
         elif msg == win32con.WM_DESTROY:
-            win32gui.PostQuitMessage(0)
+            # 标记停止，不调用 PostQuitMessage（由 PumpMessages 处理退出）
             self._running = False
         return win32gui.DefWindowProc(hwnd, msg, wparam, lparam)
 
@@ -62,14 +50,8 @@ class ClipboardMonitor:
             self.queue.put("monitor_started")
             print("剪贴板监听已启动，窗口句柄:", self.hwnd)
 
-            msg = MSG()
-            lpmsg = ctypes.byref(msg)
-            while self._running:
-                ret = ctypes.windll.user32.GetMessageW(lpmsg, None, 0, 0)
-                if ret <= 0:
-                    break
-                ctypes.windll.user32.TranslateMessage(lpmsg)
-                ctypes.windll.user32.DispatchMessageW(lpmsg)
+            # 使用 win32gui 的消息循环，避免 GIL 竞争
+            win32gui.PumpMessages()
         except Exception as e:
             self.queue.put(f"error: 监听线程异常退出: {e}")
             print(f"监听线程异常: {e}")
@@ -79,7 +61,6 @@ class ClipboardMonitor:
             print("监听线程退出")
 
     def cleanup(self):
-        """等待线程结束后调用，注销窗口类"""
         if self.class_atom:
             try:
                 win32gui.UnregisterClass(self.class_atom, self.hinst)
@@ -87,16 +68,14 @@ class ClipboardMonitor:
                 print(f"清理窗口类失败: {e}")
             self.class_atom = None
 
-
     def stop(self):
         if self.hwnd:
             ctypes.windll.user32.RemoveClipboardFormatListener(self.hwnd)
-            win32gui.PostMessage(self.hwnd, win32con.WM_DESTROY, 0, 0)
-        
+            # 发送 WM_CLOSE 会触发 WM_DESTROY 进而安全退出 PumpMessages
+            win32gui.PostMessage(self.hwnd, win32con.WM_CLOSE, 0, 0)
         self.hwnd = None
 
-
-class DROPFILES(ctypes.Structure):                       # ← 强制对齐，修复文件粘贴失败
+class DROPFILES(ctypes.Structure):
     _fields_ = [
         ("pFiles", wintypes.DWORD),
         ("pt",     wintypes.POINT),
@@ -184,7 +163,6 @@ class OperationClipboard:
                 else:
                     return {'format': "notf", 'data': None}
             if win32con.CF_HDROP in formats:
-                # PyWin32 自动将 CF_HDROP 解析为文件路径元组
                 return {'format': "HDROP", 'data': GetClipboardData(win32con.CF_HDROP)}
         except error as e:
             print(f"读取剪贴板失败: {e}")
