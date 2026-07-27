@@ -3,6 +3,7 @@
 # dependencies = []
 # ///
 
+
 from io import BytesIO
 import os
 
@@ -185,18 +186,21 @@ def start():
 
 def get(selection):
     global lds
-    if selection:
-        idx = selection[0]
-        if idx not in ctd.dict:
-            return
-        entry = ctd.get(idx)
-        fmt = entry['format']
-        lds = True
-        if fmt == "notf":
-            EmptyClipboard()
-        else:
-            op.set_clipboard(fmt, entry['data'])
-        print(f"已恢复索引 {idx}, data:", entry['data'])
+    try:
+        if selection:   
+            idx = selection[0]
+            if idx not in ctd.dict:
+                return
+            entry = ctd.get(idx)
+            fmt = entry['format']
+            lds = True
+            if fmt == "notf":
+                EmptyClipboard()
+            else:
+                op.set_clipboard(fmt, entry['data'])
+            print(f"已恢复索引 {idx}, data:", entry['data'])
+    except Exception as e:
+        print(e)
 def quiti():
     global exiting,lock
     with lock:
@@ -248,6 +252,7 @@ def setting():
     b = tk.Entry(window)
     b.insert(0,str(sls_time/1000))
     b.pack()
+    
     tk.Label(window,text="退出")
     nnnn = tk.IntVar(window,2)
     tk.Label(window,text="退出").pack(anchor="w")
@@ -293,6 +298,7 @@ root.title("Clipboards Viewer")
 root.minsize(537,417)
 menu = tk.Menu(root)
 menu.add_command(label="setting",command=lambda:setting())
+menu.add_command(label="save",command=lambda:hs.save_all())
 def lll():
     root.deiconify()
     root.attributes('-topmost', True)   # 临时置顶
@@ -371,3 +377,6 @@ except KeyboardInterrupt:
     if not exiting:
 
         quiti()
+except Exception as e:
+    print("error:",str(e))
+    quiti()
