@@ -8,6 +8,7 @@
 5. 引入 CSRF 保护（Flask-WTF）。
 """
 
+
 import zipfile,requests
 
 from threading import Thread,Lock
@@ -36,7 +37,9 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 def get_filename_from_url(url):
     parsed_url = urlparse(url)
     return parsed_url.path.split('/')[-1]
-
+def get_file_size(url):
+    response = requests.head(url)
+    return int(response.headers.get('content-length', 0))
 
 # 任务状态存储 { task_id: { 'status': 'pending'|'running'|'finished'|'failed', 'result': str, 'error': str } }
 task_store = {}
@@ -48,7 +51,7 @@ task_queue = Queue()
 
 def worker():
     while True:
-        task_id, func, args = task_queue.get()
+        task_id, func, args,id = task_queue.get()
         if task_id is None:
             break
         with task_store_lock:
@@ -149,7 +152,7 @@ name = ran_str(4)
 password = ran_str(8)
 print("name:",name,"\n","password:",password,"\n",flush=True)
 
-
+total_size=okay_size = 0
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
 ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
 
@@ -175,23 +178,29 @@ load_html()  # 初次加载
 logging.info("html load ok")
 # ==================== 后台线程：清理过期会话 + 模板热重载 ====================
 def download(url):
+    global total_size,okay_size
+    total_size=okay_size = 0
     try:
         filenr = get_filename_from_url(url=url)
         filename = os.path.join(UPLOAD_DIR,filenr)
 
-
+        total_size = get_file_size(url)
         response = requests.get(url, stream=True,timeout=10,verify=False)
         response.raise_for_status()
-    
+        
         with open(filename, 'wb') as file:
             for chunk in response.iter_content(chunk_size=8192):
+                
                 if chunk:
+                    okay_size += 8192
                     file.write(chunk)
         return ""
     except requests.exceptions.RequestException as e:
         logging.error("download error:"+str(e))
+        total_size=okay_size = 0
         raise Exception("download error")
-
+    finally:
+        total_size=okay_size = 0
 
 def background_tasks():
     
@@ -416,6 +425,7 @@ def index():
 @app.route('/api/task/<task_id>', methods=['GET'])
 @login_required
 def get_task_status(task_id):
+    global total_size,okay_size
     with task_store_lock:
         task = task_store.get(task_id)
     if not task:
@@ -423,8 +433,13 @@ def get_task_status(task_id):
     return jsonify({
         'success': True,
         'status': task['status'],
-        'error': task.get('error', '')
+        'error': task.get('error', ''),
+        'total_size': total_size,
+        'okay_size': okay_size
     })
+
+
+
 
 @app.route("/toolcall", methods=['POST'])
 @login_required
@@ -474,6 +489,7 @@ def call_tool():
         elif tool_id == 6:
             func = download
             arg_list = (clean,)
+
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
@@ -481,7 +497,7 @@ def call_tool():
         task_id = str(uuid.uuid4())
         with task_store_lock:
             task_store[task_id] = {'status': 'pending', 'result': '', 'error': ''}
-        task_queue.put((task_id, func, arg_list))
+        task_queue.put((task_id, func, arg_list,tool_id))
         return jsonify({'success': True, 'task_id': task_id}), 202
 
     except Exception as e:

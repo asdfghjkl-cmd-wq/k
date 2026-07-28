@@ -129,6 +129,19 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
   </div>
 </div>
 
+<div class="modal" id="helo">
+  <div class="modal-content">
+    <h3>download</h3>
+    <input type="text" id="urls" placeholder="地址">
+    <br>
+    <div class="xall-actions">
+      <button class="btn btn-success" onclick="download()">下载</button>
+      <button class="btn" onclick="document.getElementById('helo').style.display='none'">取消</button>
+    </div>
+  
+  
+  </div>
+</div>
 <div class="modal" id="fuck">
   <div class="modal-content">
       <h3>Call_tool</h3>
@@ -228,9 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('args').focus();
      })
   document.getElementById("download").addEventListener('click',function() {
-      document.getElementById("fuck").style.display = 'flex'
-      document.getElementById('args').value = '';
-      document.getElementById('args').focus();
+      document.getElementById("helo").style.display = 'flex'
+      document.getElementById('urls').value = '';
+      document.getElementById('urls').focus();
      })
   
 
@@ -513,6 +526,12 @@ function updateBreadcrumb() {
 async function call_tool_a() {
   const tool = parseInt(document.getElementById('tools_select').value);
   const arg = document.getElementById("args").value;
+  call_tool_b(tool,arg)
+  
+}
+async function download() {
+  const tool = 6
+  const arg = document.getElementById("urls").value;
   call_tool_b(tool,arg)
   
 }

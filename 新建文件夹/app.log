@@ -475,3 +475,612 @@
 2026-07-28 17:42:00 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 17:42:00] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
 2026-07-28 17:42:00 - root - INFO - user logining.from 127.0.0.1
 2026-07-28 17:42:00 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 17:42:00] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:11:32 - root - INFO - exec:
+2026-07-28 18:11:36 - root - INFO - exec:help
+2026-07-28 18:11:53 - root - INFO - exec:exit
+2026-07-28 18:11:56 - root - INFO - flask create ok
+2026-07-28 18:11:56 - root - INFO - html load ok
+2026-07-28 18:11:56 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-28 18:11:56 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-28 18:11:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:11:58] "GET / HTTP/1.1" 200 -
+2026-07-28 18:11:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:11:58] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:11:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:11:58] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:11:58 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:11:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:11:58] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:13:04 - root - INFO - exec:exit
+2026-07-28 18:13:07 - root - INFO - flask create ok
+2026-07-28 18:13:07 - root - INFO - html load ok
+2026-07-28 18:13:08 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-28 18:13:08 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-28 18:13:09 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:09] "GET / HTTP/1.1" 200 -
+2026-07-28 18:13:09 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:09] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:13:09 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:09] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:13:09 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:13:09 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:09] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:13:11 - root - INFO - call_tool {'tool': 6, 'args': ''}
+2026-07-28 18:13:11 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:11] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:13:11 - root - ERROR - download error:Invalid URL '': No scheme supplied. Perhaps you meant https://?
+2026-07-28 18:13:11 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:11] "GET /api/task/2336453f-030a-482e-a243-172b12a62f05 HTTP/1.1" 200 -
+2026-07-28 18:13:12 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:13:12] "GET /api/task/2336453f-030a-482e-a243-172b12a62f05 HTTP/1.1" 200 -
+2026-07-28 18:26:15 - root - INFO - flask create ok
+2026-07-28 18:26:15 - root - INFO - html load ok
+2026-07-28 18:26:15 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-28 18:26:15 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-28 18:26:33 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:33] "GET / HTTP/1.1" 200 -
+2026-07-28 18:26:33 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:33] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:26:33 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:33] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:26:33 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:26:33 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:33] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:26:35 - root - INFO - call_tool {'tool': 6, 'args': ''}
+2026-07-28 18:26:35 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:35] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:26:35 - root - ERROR - download error:Invalid URL '': No scheme supplied. Perhaps you meant https://?
+2026-07-28 18:26:35 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:35] "GET /api/task/22f0fd84-b7ae-44ae-8313-6f0a0eb25627 HTTP/1.1" 200 -
+2026-07-28 18:26:36 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:26:36] "GET /api/task/22f0fd84-b7ae-44ae-8313-6f0a0eb25627 HTTP/1.1" 200 -
+2026-07-28 18:27:19 - root - INFO - call_tool {'tool': 6, 'args': 'http://127.0.0.1:5000/download/a.zip'}
+2026-07-28 18:27:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:19] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:27:19 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): 127.0.0.1:5000
+2026-07-28 18:27:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:19] "GET /api/task/942206a6-0440-48b7-8e9b-2097f415bd2b HTTP/1.1" 200 -
+2026-07-28 18:27:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:19] "[32mHEAD /download/a.zip HTTP/1.1[0m" 302 -
+2026-07-28 18:27:19 - urllib3.connectionpool - DEBUG - http://127.0.0.1:5000 "HEAD /download/a.zip HTTP/1.1" 302 0
+2026-07-28 18:27:19 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): 127.0.0.1:5000
+2026-07-28 18:27:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:19] "[32mGET /download/a.zip HTTP/1.1[0m" 302 -
+2026-07-28 18:27:19 - urllib3.connectionpool - DEBUG - http://127.0.0.1:5000 "GET /download/a.zip HTTP/1.1" 302 283
+2026-07-28 18:27:19 - urllib3.connectionpool - DEBUG - Resetting dropped connection: 127.0.0.1
+2026-07-28 18:27:19 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:27:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:19] "GET /login?next=http://127.0.0.1:5000/download/a.zip HTTP/1.1" 200 -
+2026-07-28 18:27:19 - urllib3.connectionpool - DEBUG - http://127.0.0.1:5000 "GET /login?next=http://127.0.0.1:5000/download/a.zip HTTP/1.1" 200 1191
+2026-07-28 18:27:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:20] "GET /api/task/942206a6-0440-48b7-8e9b-2097f415bd2b HTTP/1.1" 200 -
+2026-07-28 18:27:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:20] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:27:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:23] "[32mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 302 -
+2026-07-28 18:27:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:27:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:27:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:04 - root - INFO - call_tool {'tool': 6, 'args': 'https://www.goodlink.website/download/DLGC.zip'}
+2026-07-28 18:28:04 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:04] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:28:04 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:28:04 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:04] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:05 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:05] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:06 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:06] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:06 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "HEAD /download/DLGC.zip HTTP/1.1" 302 0
+2026-07-28 18:28:06 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:28:07 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:07] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:07 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /download/DLGC.zip HTTP/1.1" 302 301
+2026-07-28 18:28:07 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /login?next=http://www.goodlink.website/download/DLGC.zip HTTP/1.1" 200 None
+2026-07-28 18:28:08 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:08] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:08 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:08] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:28:12 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:12] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:14 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:14] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:14 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:14 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:14] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:17] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:17] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:17 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:17] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:18 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:18] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:18 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:18] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:18 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:18 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:18] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:19] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:19] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:19 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:19] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:20 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:20 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:20 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:20 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:20 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:20] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:21 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:21 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:21] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:22 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:22 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:22 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:22 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:22 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:22 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:22] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:28:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:23] "GET /api/task/2e7abede-ab8f-49bb-8578-acd16be0913f HTTP/1.1" 200 -
+2026-07-28 18:28:24 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:24] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:28:24 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:28:24 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:28:24] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:11 - root - INFO - flask create ok
+2026-07-28 18:29:11 - root - INFO - html load ok
+2026-07-28 18:29:12 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-28 18:29:12 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-28 18:29:16 - root - INFO - call_tool {'tool': 6, 'args': 'https://www.goodlink.website/download/DLGC.zip'}
+2026-07-28 18:29:16 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:16] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:29:16 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:29:16 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:16] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:17] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:18 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "HEAD /download/DLGC.zip HTTP/1.1" 302 0
+2026-07-28 18:29:18 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:29:18 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:18] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:18 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /download/DLGC.zip HTTP/1.1" 302 301
+2026-07-28 18:29:19 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /login?next=http://www.goodlink.website/download/DLGC.zip HTTP/1.1" 200 None
+2026-07-28 18:29:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:19] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:19] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:29:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:23] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:23] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:23 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:23] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:25 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:25] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:25 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:25] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:25 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:25 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:25] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:26 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:26 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "GET /api/task/84ed78df-9735-42a0-a4f7-7c11ed8d56d8 HTTP/1.1" 200 -
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:26 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:26 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:26] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:39 - root - INFO - call_tool {'tool': 6, 'args': 'https://www.goodlink.website/download/DLGC.zip'}
+2026-07-28 18:29:39 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:39] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:29:39 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:29:39 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:39] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:39 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "HEAD /download/DLGC.zip HTTP/1.1" 302 0
+2026-07-28 18:29:39 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:29:40 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:40] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:40 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:40] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:40 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:40] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:40 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:40 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:40] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:40 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /download/DLGC.zip HTTP/1.1" 302 301
+2026-07-28 18:29:41 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:41] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:41 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /login?next=http://www.goodlink.website/download/DLGC.zip HTTP/1.1" 200 None
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:43 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "GET /api/task/5d24a6d4-e13f-4425-a7e4-a73e4664ba8c HTTP/1.1" 200 -
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:29:43 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:29:43 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:43] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:29:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:53] "DELETE /api/delete/DLGC.zip HTTP/1.1" 200 -
+2026-07-28 18:29:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:29:53] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:30:15 - root - INFO - call_tool {'tool': 6, 'args': 'https://www.goodlink.website/download/DLGC.zip'}
+2026-07-28 18:30:15 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:15] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:30:15 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:30:15 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:15] "GET /api/task/ff08af9e-0e59-4099-90f4-fbaf3aa96cbb HTTP/1.1" 200 -
+2026-07-28 18:30:16 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "HEAD /download/DLGC.zip HTTP/1.1" 302 0
+2026-07-28 18:30:16 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:30:16 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:16] "GET /api/task/ff08af9e-0e59-4099-90f4-fbaf3aa96cbb HTTP/1.1" 200 -
+2026-07-28 18:30:16 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /download/DLGC.zip HTTP/1.1" 302 301
+2026-07-28 18:30:17 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /login?next=http://www.goodlink.website/download/DLGC.zip HTTP/1.1" 200 None
+2026-07-28 18:30:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:17] "GET /api/task/ff08af9e-0e59-4099-90f4-fbaf3aa96cbb HTTP/1.1" 200 -
+2026-07-28 18:30:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:17] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:30:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:17] "GET /api/task/ff08af9e-0e59-4099-90f4-fbaf3aa96cbb HTTP/1.1" 200 -
+2026-07-28 18:30:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:17] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:30:17 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:30:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:17] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:30:23 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:23] "GET /download/DLGC.zip HTTP/1.1" 200 -
+2026-07-28 18:30:27 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:27] "GET / HTTP/1.1" 200 -
+2026-07-28 18:30:27 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:27] "[32mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 302 -
+2026-07-28 18:30:27 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:30:27 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:27] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:30:27 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:27] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-28 18:30:27 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:27] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:30:27 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:30:27 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:30:27] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:16 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:16] "[33mDELETE /api/delete/DLGC.zip HTTP/1.1[0m" 404 -
+2026-07-28 18:31:35 - root - INFO - call_tool {'tool': 6, 'args': 'https://www.goodlink.website/uadminpjk15347482210qwertyuiopasdfghjklzxcvbnmqqww/DLGC.zip'}
+2026-07-28 18:31:35 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:35] "[35m[1mPOST /toolcall HTTP/1.1[0m" 202 -
+2026-07-28 18:31:35 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:31:35 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:35] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:36 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "HEAD /uadminpjk15347482210qwertyuiopasdfghjklzxcvbnmqqww/DLGC.zip HTTP/1.1" 200 0
+2026-07-28 18:31:36 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): www.goodlink.website:443
+2026-07-28 18:31:36 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:36] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:37 - urllib3.connectionpool - DEBUG - https://www.goodlink.website:443 "GET /uadminpjk15347482210qwertyuiopasdfghjklzxcvbnmqqww/DLGC.zip HTTP/1.1" 200 199951150
+2026-07-28 18:31:37 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:37] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:37 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:37] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:37 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:37] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:37 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:37 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:37] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:38 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:38] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:40 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:40] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:41 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:41] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:41 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:41] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:41 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:41] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:41 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:41 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:41] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:42 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:42] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:44 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:44] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:44 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:44] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:44 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:44] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:44 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:44 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:44] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:44 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:44] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:45 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:45 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:45 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:45 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:45 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:45] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:46 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:46 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:46] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:47 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:47 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:47 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:47 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:47 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:47 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:47] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:48 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:48] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:48 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:49 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:50 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:50 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:50 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:50 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:50 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:50 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:50] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:51 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:51 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:51] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:52 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:52] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:53 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:53 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:53 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:53 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:53 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:53 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:53] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:54 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:54 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:54 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:54 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:54 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:54 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:54] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:55 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:55 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:55 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:55 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:55 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:55 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:55] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:56 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:56 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:56 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:56 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:56 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:56] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:57 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:57 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:57 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:57 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:57 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:57 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:57] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:58 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:58 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:58 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:58 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:58 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:58 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:58] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:59 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:59] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:59 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:59] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:59 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:59 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:59] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:31:59 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:59] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:31:59 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:59] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-28 18:31:59 - root - INFO - user logining.from 127.0.0.1
+2026-07-28 18:31:59 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:31:59] "GET /login HTTP/1.1" 200 -
+2026-07-28 18:32:00 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:00] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:01 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:01] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:02 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:02] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:03 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:03] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:04 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:04] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:05 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:05] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:07 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:07] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:07 - root - ERROR - [WinError 32] ÁíÒ»¸ö³ÌÐòÕýÔÚÊ¹ÓÃ´ËÎÄ¼þ£¬½ø³ÌÎÞ·¨·ÃÎÊ¡£: 'd:\\k\\ÐÂ½¨ÎÄ¼þ¼Ð\\uploads\\DLGC.zip'
+2026-07-28 18:32:07 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:07] "[35m[1mDELETE /api/delete/DLGC.zip HTTP/1.1[0m" 500 -
+2026-07-28 18:32:08 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:08] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:09 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:09] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:10 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:10] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:11 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:11] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:12 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:12] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:13 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:13] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:14 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:14] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:15 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:15] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:16 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:16] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:17 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:17] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:18 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:18] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
+2026-07-28 18:32:19 - werkzeug - INFO - 127.0.0.1 - - [28/Jul/2026 18:32:19] "GET /api/task/7663279b-4459-4929-95a9-f7bf996b8983 HTTP/1.1" 200 -
