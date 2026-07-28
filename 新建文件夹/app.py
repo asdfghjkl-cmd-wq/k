@@ -8,17 +8,13 @@
 5. 引入 CSRF 保护（Flask-WTF）。
 """
 
-
-import zipfile,requests
-
-from threading import Thread,Lock
-
+import zipfile, requests
+from threading import Thread, Lock, Event
 from queue import Queue
 from urllib.parse import urlparse
-
 import logging
 import tool.u1
-from string import ascii_lowercase,ascii_letters
+from string import ascii_lowercase, ascii_letters
 from flask import (Flask, request, jsonify, render_template_string,
                    make_response, send_from_directory, session, redirect, url_for, abort)
 import random
@@ -27,58 +23,57 @@ import os, sys, json, traceback, shutil, re, uuid, time
 from datetime import datetime
 from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from functools import wraps
+ascii_lowercase += "0123456789"
 import tool.u2
 
-# 引入 Flask-WTF CSRF 保护
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
+# 禁用不安全的请求警告（针对 verify=False）
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_filename_from_url(url):
     parsed_url = urlparse(url)
     return parsed_url.path.split('/')[-1]
-def get_file_size(url):
-    response = requests.head(url)
-    return int(response.headers.get('content-length', 0))
 
-# 任务状态存储 { task_id: { 'status': 'pending'|'running'|'finished'|'failed', 'result': str, 'error': str } }
-task_store = {}
+# ==================== 异步任务系统 ====================
+task_store = {}          # { task_id: { 'status':..., 'error':..., 'tool_id':..., 'progress':{'total':0,'current':0}, 'cancel_event':Event() } }
 task_store_lock = Lock()
 
-# 简单的线程池控制（限制同时执行的任务数）
 MAX_WORKERS = 2
 task_queue = Queue()
 
 def worker():
     while True:
-        task_id, func, args,id = task_queue.get()
+        task_id, func, base_args, tool_id = task_queue.get()
         if task_id is None:
             break
         with task_store_lock:
             task_store[task_id]['status'] = 'running'
         try:
-            # 工具函数需要应用上下文才能正常使用 app.logger 等
             with app.app_context():
-                func(*args)
+                if tool_id == 6:   # 下载任务
+                    func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
+                else:
+                    func(*base_args)
             with task_store_lock:
                 task_store[task_id]['status'] = 'finished'
         except Exception as e:
             traceback.print_exc()
             with task_store_lock:
-                task_store[task_id]['status'] = 'failed'
-                task_store[task_id]['error'] = str(e)
+                if task_store[task_id]['cancel_event'].is_set():
+                    task_store[task_id]['status'] = 'cancelled'
+                else:
+                    task_store[task_id]['status'] = 'failed'
+                    task_store[task_id]['error'] = str(e)
         finally:
             task_queue.task_done()
 
-# 启动工作线程
 for _ in range(MAX_WORKERS):
     t = Thread(target=worker, daemon=True)
     t.start()
 
-
-from functools import wraps
-ascii_lowercase += "0123456789"
-ascii_letters += "0123456789"
 # ==================== 初始化 ====================
 if sys.platform.startswith('win'):
     import io, locale
@@ -87,34 +82,25 @@ if sys.platform.startswith('win'):
     try: locale.setlocale(locale.LC_ALL, 'zh_CN.UTF-8')
     except: pass
 
-def ran_str(len,j=ascii_lowercase):
-    
-    x = ""
-    ascii_lowercase = j
-    
-
-    for _ in range(len):
-        
-        x += random.choice(ascii_lowercase)
-    return x
+def ran_str(length, charset=ascii_lowercase):
+    return ''.join(random.choice(charset) for _ in range(length))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(BASE_DIR, 'a.html')
 
 try:
-    s=open(os.path.join(BASE_DIR,"s.key"),"r",encoding="utf-8")
-    k = s.read()
+    with open(os.path.join(BASE_DIR, "s.key"), "r", encoding="utf-8") as s:
+        k = s.read()
 except:
-    k = ran_str(128,ascii_letters)
-    s= open(os.path.join(BASE_DIR,"s.key"),"w",encoding="utf-8")
-    s.write(k)
-s.close()
+    k = ran_str(128, ascii_letters)
+    with open(os.path.join(BASE_DIR, "s.key"), "w", encoding="utf-8") as s:
+        s.write(k)
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    filename=os.path.join(BASE_DIR,"app.log")
+    filename=os.path.join(BASE_DIR, "app.log")
 )
 
 app = Flask(__name__)
@@ -128,90 +114,51 @@ CORS(app, resources={
     }
 }, supports_credentials=True)
 app.config.update(
-
-    MAX_CONTENT_LENGTH=200 * 1024 * 1024,  # 单分片最大200MB（按需调整）
+    MAX_CONTENT_LENGTH=200 * 1024 * 1024,
     UPLOAD_FOLDER=os.path.join(BASE_DIR, 'uploads'),
     SECRET_KEY=os.environ.get('SECRET_KEY', k),
     JSON_AS_ASCII=False
 )
 
-# 初始化 CSRF 保护
 csrf = CSRFProtect(app)
-
 logging.info("flask create ok")
 
 UPLOAD_DIR = os.path.abspath(app.config['UPLOAD_FOLDER'])
-CHUNK_DIR = os.path.join(UPLOAD_DIR, 'chunks')  # 分片临时目录
+CHUNK_DIR = os.path.join(UPLOAD_DIR, 'chunks')
 META_DIR = os.path.join(UPLOAD_DIR, 'metadata')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(META_DIR, exist_ok=True)
 os.makedirs(CHUNK_DIR, exist_ok=True)
 
-
 name = ran_str(4)
 password = ran_str(8)
-print("name:",name,"\n","password:",password,"\n",flush=True)
+print("name:", name, "\n", "password:", password, "\n", flush=True)
 
-total_size=okay_size = 0
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
 ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
-
 users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
 
-print(ADMIN_USERNAME == name)
-
-
-
-# 全局 HTML 模板内容（支持热重载）
+# ==================== 全局 HTML 模板 ====================
 HTML_TEMPLATE = ""
 
 def load_html():
-    """读取 HTML 模板，出错时保留旧内容"""
     global HTML_TEMPLATE
     try:
         with open(HTML_FILE, "r", encoding="utf-8") as f:
             HTML_TEMPLATE = f.read()
     except Exception as e:
         print(f"[WARN] 无法加载模板 {HTML_FILE}: {e}")
+        HTML_TEMPLATE = "<h1>模板加载失败，请联系管理员</h1>"
 
-load_html()  # 初次加载
+load_html()
 logging.info("html load ok")
-# ==================== 后台线程：清理过期会话 + 模板热重载 ====================
-def download(url):
-    global total_size,okay_size
-    total_size=okay_size = 0
-    try:
-        filenr = get_filename_from_url(url=url)
-        filename = os.path.join(UPLOAD_DIR,filenr)
 
-        total_size = get_file_size(url)
-        response = requests.get(url, stream=True,timeout=10,verify=False)
-        response.raise_for_status()
-        
-        with open(filename, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                
-                if chunk:
-                    okay_size += 8192
-                    file.write(chunk)
-        return ""
-    except requests.exceptions.RequestException as e:
-        logging.error("download error:"+str(e))
-        total_size=okay_size = 0
-        raise Exception("download error")
-    finally:
-        total_size=okay_size = 0
-
+# ==================== 后台线程 ====================
 def background_tasks():
-    
     global HTML_TEMPLATE
-    
     while True:
-        print("exec therad",flush=True)
-        time.sleep(300)  # 每5分钟执行一次
-        # 清理过期分卷会话
+        time.sleep(300)
         cleanup_expired_sessions()
-        # 热重载 HTML 模板
         try:
             with open(HTML_FILE, "r", encoding="utf-8") as f:
                 new_tpl = f.read()
@@ -221,9 +168,7 @@ def background_tasks():
         except Exception as e:
             print(f"[WARN] 模板重载异常: {e}")
 
-if app.debug:
-    pass
-else:
+if not app.debug:
     bg_thread = Thread(target=background_tasks, daemon=True)
     bg_thread.start()
 
@@ -231,7 +176,6 @@ else:
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-
         if 'user_id' not in session:
             if (request.is_json or
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
@@ -309,41 +253,27 @@ def get_meta_path(rel_path):
         meta_dir = meta_base
     return os.path.join(meta_dir, os.path.basename(rel_path) + '.json')
 
-
-
 def zipe(file: str):
-    """
-    解压指定的 zip 文件到 uploads 目录下，自动创建与 zip 同名的子目录。
-    如果目标目录已存在，会自动追加数字后缀避免覆盖。
-    """
-    # 1. 获取安全的绝对路径并检查文件是否存在
     zip_path = safe_path(file)
     if not os.path.isfile(zip_path):
         raise FileNotFoundError(f"文件不存在: {file}")
-
-    # 2. 生成目标目录名：去掉 .zip 后缀（只处理 .zip，忽略大小写）
     basename = os.path.basename(zip_path)
     if basename.lower().endswith('.zip'):
-        dir_name = basename[:-4]  # 去掉后4个字符 ".zip"
+        dir_name = basename[:-4]
     else:
-        dir_name = basename  # 不是 .zip 就原样当目录名
-
-    if not dir_name:           # 极端情况：文件名就是 ".zip"
+        dir_name = basename
+    if not dir_name:
         dir_name = "extracted"
-
-    # 3. 保证目录不重名（已在循环外处理）
     target_base = os.path.join(UPLOAD_DIR, dir_name)
     target_dir = target_base
     counter = 1
     while os.path.exists(target_dir):
         target_dir = f"{target_base} ({counter})"
         counter += 1
-        if counter > 1000:  # 防意外死循环
+        if counter > 1000:
             ts = int(time.time() * 1000) % 1000000
             target_dir = f"{target_base}_{ts}"
             break
-
-    # 4. 创建目录并解压
     try:
         os.makedirs(target_dir, exist_ok=True)
         with zipfile.ZipFile(zip_path, 'r') as zf:
@@ -351,19 +281,42 @@ def zipe(file: str):
         app.logger.info(f"解压完成: {file} -> {target_dir}")
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
-        # 清理可能已创建的目录
         if os.path.exists(target_dir) and not os.listdir(target_dir):
             os.rmdir(target_dir)
         raise
 
+def download(url, task_id, cancel_event):
+    """下载文件，支持进度更新和取消"""
+    filepath = None
+    try:
+        filename = get_filename_from_url(url)
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        resp = requests.get(url, stream=True, timeout=10, verify=False)
+        resp.raise_for_status()
+        total = int(resp.headers.get('content-length', 0))
 
+        with task_store_lock:
+            task_store[task_id]['progress'] = {'total': total, 'current': 0}
 
+        with open(filepath, 'wb') as f:
+            for chunk in resp.iter_content(chunk_size=8192):
+                if cancel_event.is_set():
+                    resp.close()
+                    raise Exception("下载被取消")
+                if chunk:
+                    f.write(chunk)
+                    with task_store_lock:
+                        task_store[task_id]['progress']['current'] += len(chunk)
+    except Exception as e:
+        logging.error(f"下载错误: {e}")
+        if filepath and os.path.exists(filepath):
+            os.remove(filepath)
+        raise
 
 # ==================== 分卷上传会话管理 ====================
-chunk_sessions = {}  # { session_id: { 'filename':..., 'folder':..., 'total':..., 'received':set(), 'created':timestamp } }
+chunk_sessions = {}
 
 def cleanup_expired_sessions():
-    """清理超过1小时未完成的会话"""
     now = time.time()
     expired = [sid for sid, info in chunk_sessions.items() if now - info.get('created', 0) > 60*15]
     for sid in expired:
@@ -393,10 +346,7 @@ button{width:100%;padding:10px;background:#3498db;color:#fff;border:none;border-
 <div class="info">默认: admin / admin123</div></div></body></html>
 '''
 
-
-# 不再从文件读取，改用全局变量 HTML_TEMPLATE（由 load_html 及后台线程维护）
-
-# ==================== 原有路由 ====================
+# ==================== 路由 ====================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     logging.info(f"user logining.from {request.remote_addr}")
@@ -425,7 +375,6 @@ def index():
 @app.route('/api/task/<task_id>', methods=['GET'])
 @login_required
 def get_task_status(task_id):
-    global total_size,okay_size
     with task_store_lock:
         task = task_store.get(task_id)
     if not task:
@@ -434,12 +383,21 @@ def get_task_status(task_id):
         'success': True,
         'status': task['status'],
         'error': task.get('error', ''),
-        'total_size': total_size,
-        'okay_size': okay_size
+        'tool_id': task['tool_id'],
+        'progress': task.get('progress', {})
     })
 
-
-
+@app.route('/api/task/<task_id>/cancel', methods=['POST'])
+@login_required
+def cancel_task(task_id):
+    with task_store_lock:
+        task = task_store.get(task_id)
+    if not task:
+        return jsonify({'success': False, 'error': '无效任务ID'}), 404
+    if task['status'] not in ('running', 'pending'):
+        return jsonify({'success': False, 'error': '任务无法取消'}), 400
+    task['cancel_event'].set()
+    return jsonify({'success': True})
 
 @app.route("/toolcall", methods=['POST'])
 @login_required
@@ -450,7 +408,6 @@ def call_tool():
         tool_id = a.get("tool")
         args_raw = a.get("args", "").strip()
 
-        # 清理参数中的多余 uploads 前缀（统一转为相对路径）
         def clean_arg(s):
             s = s.replace('\\', '/').strip().strip("'\"")
             if s.lower().startswith('uploads/'):
@@ -458,16 +415,15 @@ def call_tool():
             elif s.lower() == 'uploads':
                 s = ''
             if s == '.':
-                s = ''  # 当前目录用空字符串表示
+                s = ''
             return s
 
         clean = clean_arg(args_raw)
 
-        if tool_id == 1:   # Assembly（u2.call）
+        if tool_id == 1:   # Assembly
             func = tool.u2.call
-            # u2.call 需要源目录（里面包含 file 及 data 分片）的绝对路径，以及目标目录
             arg_list = (safe_path(clean), os.path.join(".", "uploads"))
-        elif tool_id == 2: # Cut（u1.call）
+        elif tool_id == 2: # Cut
             m = re.search(r'-c\s+(\S+)\s+-f\s+(.+)', args_raw)
             if not m:
                 return jsonify({'success': False, 'error': '参数格式错误'}), 400
@@ -482,29 +438,31 @@ def call_tool():
         elif tool_id == 4:
             func = time.sleep
             arg_list = (10,)
-
         elif tool_id == 5:
             func = zipe
             arg_list = (clean,)
         elif tool_id == 6:
             func = download
-            arg_list = (clean,)
-
+            arg_list = (clean,)   # task_id 和 cancel_event 由 worker 注入
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
-        # 提交异步任务
         task_id = str(uuid.uuid4())
         with task_store_lock:
-            task_store[task_id] = {'status': 'pending', 'result': '', 'error': ''}
-        task_queue.put((task_id, func, arg_list,tool_id))
+            task_store[task_id] = {
+                'status': 'pending',
+                'error': '',
+                'tool_id': tool_id,
+                'progress': {'total': 0, 'current': 0},
+                'cancel_event': Event()
+            }
+        task_queue.put((task_id, func, arg_list, tool_id))
         return jsonify({'success': True, 'task_id': task_id}), 202
 
     except Exception as e:
         traceback.print_exc()
         logging.error(str(e))
         return jsonify({'success': False, 'error': '服务器内部错误'}), 500
-
 
 @app.route('/upload', methods=['POST'])
 @login_required
@@ -534,18 +492,10 @@ def upload_file():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'保存失败: {str(e)}'}), 500
-"""
-@app.route('/tools')
-@login_required
-def call_tools():
-    tool = request.args.get()
-"""
 
 @app.route("/new")
-
 def sssss():
     if app.debug:
-    # 热重载 HTML 模板
         try:
             load_html()
             print("[INFO] 模板已热重载")
@@ -624,7 +574,6 @@ def delete_item(item_path):
             meta_file = get_meta_path(rel)
             if os.path.exists(meta_file):
                 os.remove(meta_file)
-                # 尝试清理空文件夹
                 meta_dir = os.path.dirname(meta_file)
                 if meta_dir != META_DIR and not os.listdir(meta_dir):
                     os.rmdir(meta_dir)
@@ -648,11 +597,9 @@ def clear_all():
             path = os.path.join(UPLOAD_DIR, name)
             if os.path.isfile(path): os.remove(path)
             else: shutil.rmtree(path)
-        # 清理元数据文件夹
         if os.path.exists(META_DIR):
             shutil.rmtree(META_DIR)
             os.makedirs(META_DIR, exist_ok=True)
-        # chunks 不清理（可能正在上传）
         return jsonify({'success': True})
     except Exception as e:
         logging.error(str(e))
@@ -676,14 +623,10 @@ def download_file(file_path):
 def ss():
     abort(404)
 
-if __name__ == "__main__":
-    print(app.debug,flush=True)
-
 # ==================== 大文件分卷上传 API ====================
 @app.route('/api/chunk/init', methods=['POST'])
 @login_required
 def chunk_init():
-    """初始化分卷上传会话"""
     data = request.get_json(silent=True)
     if not data or 'filename' not in data or 'totalChunks' not in data:
         return jsonify({'success': False, 'error': '缺少参数'}), 400
@@ -693,7 +636,6 @@ def chunk_init():
         return jsonify({'success': False, 'error': '分片数无效'}), 400
     folder = data.get('folder', '').strip()
     session_id = str(uuid.uuid4())
-    # 创建会话信息
     chunk_sessions[session_id] = {
         'filename': original,
         'folder': folder,
@@ -701,14 +643,12 @@ def chunk_init():
         'received': set(),
         'created': time.time()
     }
-    # 创建分片存储目录
     os.makedirs(os.path.join(CHUNK_DIR, session_id), exist_ok=True)
     return jsonify({'success': True, 'session_id': session_id})
 
 @app.route('/api/chunk/upload', methods=['POST'])
 @login_required
 def chunk_upload():
-    """接收一个分片"""
     session_id = request.form.get('session_id')
     chunk_index = request.form.get('chunk_index')
     if not session_id or chunk_index is None:
@@ -724,11 +664,8 @@ def chunk_upload():
     session_info = chunk_sessions[session_id]
     if chunk_index < 0 or chunk_index >= session_info['total']:
         return jsonify({'success': False, 'error': '分片序号超出范围'}), 400
-
-    # 幂等处理：如果该分片已上传，直接返回成功
     if chunk_index in session_info['received']:
         return jsonify({'success': True, 'received': len(session_info['received']), 'duplicate': True})
-
     chunk_file = request.files['chunk']
     chunk_path = os.path.join(CHUNK_DIR, session_id, f"{chunk_index:06d}.part")
     try:
@@ -742,7 +679,6 @@ def chunk_upload():
 @app.route('/api/chunk/status', methods=['GET'])
 @login_required
 def chunk_status():
-    """查询上传进度"""
     session_id = request.args.get('session_id')
     if not session_id or session_id not in chunk_sessions:
         return jsonify({'success': False, 'error': '无效会话'}), 404
@@ -757,7 +693,6 @@ def chunk_status():
 @app.route('/api/chunk/complete', methods=['POST'])
 @login_required
 def chunk_complete():
-    """合并分片并清理"""
     data = request.get_json(silent=True)
     if not data or 'session_id' not in data:
         return jsonify({'success': False, 'error': '缺少会话ID'}), 400
@@ -767,20 +702,16 @@ def chunk_complete():
     info = chunk_sessions[session_id]
     if len(info['received']) != info['total']:
         return jsonify({'success': False, 'error': '还有分片未上传'}), 400
-
-    # 合并文件
     try:
         target_dir = safe_path(info['folder']) if info['folder'] else UPLOAD_DIR
     except ValueError as e:
         logging.error(str(e))
         return jsonify({'success': False, 'error': f'目录非法: {"see log"}'}), 400
-    
     os.makedirs(target_dir, exist_ok=True)
     filename = clean_filename(info['filename'])
     if os.path.exists(os.path.join(target_dir, filename)):
         filename = unique_name(filename, target_dir)
     filepath = os.path.join(target_dir, filename)
-
     session_dir = os.path.join(CHUNK_DIR, session_id)
     try:
         with open(filepath, 'wb') as fout:
@@ -789,17 +720,14 @@ def chunk_complete():
                 if not os.path.exists(part_path):
                     raise Exception(f"缺失分片 {i}")
                 with open(part_path, 'rb') as fin:
-                    # 分块读取避免大文件撑爆内存
                     while True:
                         chunk = fin.read(8192)
                         if not chunk:
                             break
                         fout.write(chunk)
-        # 记录元数据
         size = os.path.getsize(filepath)
         rel = os.path.relpath(filepath, UPLOAD_DIR)
         save_meta(rel, info['filename'], size)
-        # 清理临时文件
         shutil.rmtree(session_dir, ignore_errors=True)
         chunk_sessions.pop(session_id, None)
         return jsonify({'success': True, 'filename': filename, 'size': size})
@@ -808,60 +736,47 @@ def chunk_complete():
         logging.error(str(e))
         return jsonify({'success': False, 'error': f'合并失败: {"see log"}'}), 500
 
-
-
 @app.errorhandler(404)
 def not_found(e):
     if request.path.startswith('/api/'):
         return jsonify({'success': False, 'error': 'Not found'}), 404
     return redirect(url_for('login'))
 
-# CSRF 错误处理
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return jsonify({'success': False, 'error': 'CSRF验证失败'}), 400
 
+# ==================== 服务器控制台（调试用） ====================
 from pathlib import Path
 
 def generate_tree(path_str, n=0):
-    """
-    生成目录树字符串
-    :param path_str: 路径字符串（会自动转为 Path 对象）
-    :param n: 当前缩进级别（内部递归使用）
-    """
     tree_str = ""
-    path = Path(path_str).resolve()  # 转为绝对路径，避免相对路径混淆
-    
+    path = Path(path_str).resolve()
     if not path.exists():
         return f"路径不存在: {path_str}\n"
-    
     try:
         if path.is_file():
             tree_str += '    |' * n + '-' * 4 + path.name + '\n'
         elif path.is_dir():
-            # 根目录或子目录标识
             if n == 0:
                 tree_str += str(path) + '\\\n'
             else:
                 tree_str += '    |' * n + '-' * 4 + path.name + '\\\n'
-            
-            # 递归处理子项
             for child in sorted(path.iterdir()):
                 tree_str += generate_tree(str(child), n + 1)
     except PermissionError:
         tree_str += '    |' * n + '-' * 4 + f"[权限不足] {path.name}\n"
     except Exception as e:
         tree_str += '    |' * n + '-' * 4 + f"[错误: {e}]\n"
-    
     return tree_str
+
 def create_file(filename):
     with open(filename, 'a'):
         os.utime(filename, None)
 
-
 def restart_service():
-   python = sys.executable 
-   os.execl(python, python, *sys.argv) 
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
 
 def w():
     time.sleep(1)
@@ -880,24 +795,20 @@ def w():
                     create_file(os.path.join(BASE_DIR,"de.lock"))
                     restart_service()
                 elif ddd == "close":
-                    os.remove(os.path.join(BASE_DIR,"de.lock"))
+                    if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
+                        os.remove(os.path.join(BASE_DIR,"de.lock"))
                     restart_service()
             elif a.lower() == "restart":
-                 restart_service()
-            else:print("not found")
-
-        except Exception as a:
+                restart_service()
+            else: print("not found")
+        except Exception as e:
             traceback.print_exc()
-            logging.error(f"exec error:{str(a)}")
-
-            
-
+            logging.error(f"exec error:{str(e)}")
 
 if __name__ == '__main__':
-    print(f"🌐 启动：http://0.0.0.0:5000",flush=True)
+    print(f"🌐 启动：http://0.0.0.0:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
         app.debug = True
-
-    s = Thread(target=w,daemon=True)
+    s = Thread(target=w, daemon=True)
     s.start()
-    app.run("0.0.0.0",5000  ,use_reloader=False)
+    app.run("0.0.0.0", 5000, use_reloader=False)
