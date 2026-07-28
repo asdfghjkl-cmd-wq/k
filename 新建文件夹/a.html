@@ -100,6 +100,7 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
   <button class="btn btn-success" id="uploadBtn">开始上传</button>
   <button class="btn" id="testBtn">测试上传</button>
   <button class="btn" id="call">调用工具</button>
+  <button class="btn" id="download">下载</button>
   <button class="btn btn-outline" id="newFolderBtn">新建文件夹</button>
   <button class="btn btn-danger" id="clearSelBtn">清空选择</button>
 </div>
@@ -135,7 +136,7 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
         tools<select id="tools_select">
           <option value="1">Assembly</option>
             <option value="2">Cut</option>
-            <option value="4">exec</option>
+            <option value="4">wait</option>
             <option value="5">zip e</option>
             <option value="3">help</option>
         </select>
@@ -225,9 +226,15 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById("fuck").style.display = 'flex'
       document.getElementById('args').value = '';
       document.getElementById('args').focus();
+     })
+  document.getElementById("download").addEventListener('click',function() {
+      document.getElementById("fuck").style.display = 'flex'
+      document.getElementById('args').value = '';
+      document.getElementById('args').focus();
+     })
+  
 
-
-  })
+ 
   document.getElementById('newFolderBtn').addEventListener('click', function() {
     document.getElementById('folderModal').style.display = 'flex';
     document.getElementById('folderName').value = '';
@@ -243,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('startBigUploadBtn').addEventListener('click', startBigUpload);
 
   refresh();
-});
+  })
 
 // ========== 文件选择与列表 ==========
 function addFiles(files) {
@@ -502,9 +509,15 @@ function updateBreadcrumb() {
   el.innerHTML = html;
 }
 
+
 async function call_tool_a() {
   const tool = parseInt(document.getElementById('tools_select').value);
   const arg = document.getElementById("args").value;
+  call_tool_b(tool,arg)
+  
+}
+async function call_tool_b(tool,arg) {
+
 
   // 发送异步请求
   let resp = await csrfFetch('/toolcall', {

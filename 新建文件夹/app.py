@@ -7,11 +7,36 @@
 4. 优化并发控制，避免进度计数异常（前端已建议修复，此处确保后端稳健）。
 5. 引入 CSRF 保护（Flask-WTF）。
 """
-import zipfile
+
+import zipfile,requests
 
 from threading import Thread,Lock
 
 from queue import Queue
+from urllib.parse import urlparse
+
+import logging
+import tool.u1
+from string import ascii_lowercase,ascii_letters
+from flask import (Flask, request, jsonify, render_template_string,
+                   make_response, send_from_directory, session, redirect, url_for, abort)
+import random
+from flask_cors import CORS
+import os, sys, json, traceback, shutil, re, uuid, time
+from datetime import datetime
+from urllib.parse import quote
+from werkzeug.security import generate_password_hash, check_password_hash
+
+import tool.u2
+
+# 引入 Flask-WTF CSRF 保护
+from flask_wtf.csrf import CSRFProtect, CSRFError
+
+
+def get_filename_from_url(url):
+    parsed_url = urlparse(url)
+    return parsed_url.path.split('/')[-1]
+
 
 # 任务状态存储 { task_id: { 'status': 'pending'|'running'|'finished'|'failed', 'result': str, 'error': str } }
 task_store = {}
@@ -46,26 +71,11 @@ def worker():
 for _ in range(MAX_WORKERS):
     t = Thread(target=worker, daemon=True)
     t.start()
-import threading
-import logging
-import tool.u1
-from string import ascii_lowercase,ascii_letters
-from flask import (Flask, request, jsonify, render_template_string,
-                   make_response, send_from_directory, session, redirect, url_for, abort)
-import random
-from flask_cors import CORS
-import os, sys, json, traceback, shutil, re, uuid, time
-from datetime import datetime
-from urllib.parse import quote
-from werkzeug.security import generate_password_hash, check_password_hash
+
+
 from functools import wraps
 ascii_lowercase += "0123456789"
 ascii_letters += "0123456789"
-import tool.u2
-
-# 引入 Flask-WTF CSRF 保护
-from flask_wtf.csrf import CSRFProtect, CSRFError
-
 # ==================== 初始化 ====================
 if sys.platform.startswith('win'):
     import io, locale
@@ -164,6 +174,25 @@ def load_html():
 load_html()  # 初次加载
 logging.info("html load ok")
 # ==================== 后台线程：清理过期会话 + 模板热重载 ====================
+def download(url):
+    try:
+        filenr = get_filename_from_url(url=url)
+        filename = os.path.join(UPLOAD_DIR,filenr)
+
+
+        response = requests.get(url, stream=True,timeout=10,verify=False)
+        response.raise_for_status()
+    
+        with open(filename, 'wb') as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    file.write(chunk)
+        return ""
+    except requests.exceptions.RequestException as e:
+        logging.error("download error:"+str(e))
+        raise Exception("download error")
+
+
 def background_tasks():
     
     global HTML_TEMPLATE
@@ -441,6 +470,9 @@ def call_tool():
 
         elif tool_id == 5:
             func = zipe
+            arg_list = (clean,)
+        elif tool_id == 6:
+            func = download
             arg_list = (clean,)
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
@@ -850,6 +882,6 @@ if __name__ == '__main__':
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
         app.debug = True
 
-    s = threading.Thread(target=w,daemon=True)
+    s = Thread(target=w,daemon=True)
     s.start()
     app.run("0.0.0.0",5000  ,use_reloader=False)
