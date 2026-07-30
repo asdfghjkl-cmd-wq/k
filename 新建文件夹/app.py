@@ -129,7 +129,7 @@ META_DIR = os.path.join(UPLOAD_DIR, 'metadata')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(META_DIR, exist_ok=True)
 os.makedirs(CHUNK_DIR, exist_ok=True)
-
+share_dict = dict()
 name = ran_str(4)
 password = ran_str(8)
 print("name:", name, "\n", "password:", password, "\n", flush=True)
@@ -253,7 +253,7 @@ def get_meta_path(rel_path):
         meta_dir = meta_base
     return os.path.join(meta_dir, os.path.basename(rel_path) + '.json')
 
-def zipe(file: str):
+def zipe(file: str,dir):
     zip_path = safe_path(file)
     if not os.path.isfile(zip_path):
         raise FileNotFoundError(f"文件不存在: {file}")
@@ -264,7 +264,7 @@ def zipe(file: str):
         dir_name = basename
     if not dir_name:
         dir_name = "extracted"
-    target_base = os.path.join(UPLOAD_DIR, dir_name)
+    target_base = os.path.join(UPLOAD_DIR,dir, dir_name)
     target_dir = target_base
     counter = 1
     while os.path.exists(target_dir):
@@ -285,12 +285,12 @@ def zipe(file: str):
             os.rmdir(target_dir)
         raise
 
-def download(url, task_id, cancel_event):
+def download(url,dir, task_id, cancel_event):
     """下载文件，支持进度更新和取消"""
     filepath = None
     try:
         filename = get_filename_from_url(url)
-        filepath = os.path.join(UPLOAD_DIR, filename)
+        filepath = os.path.join(UPLOAD_DIR, dir ,filename)
         resp = requests.get(url, stream=True, timeout=10, verify=False)
         resp.raise_for_status()
         total = int(resp.headers.get('content-length', 0))
@@ -404,6 +404,7 @@ def cancel_task(task_id):
 def call_tool():
     try:
         a = request.json
+        a=dict(a)
         logging.info(f"call_tool {a}")
         tool_id = a.get("tool")
         args_raw = a.get("args", "").strip()
@@ -422,7 +423,7 @@ def call_tool():
 
         if tool_id == 1:   # Assembly
             func = tool.u2.call
-            arg_list = (safe_path(clean), os.path.join(".", "uploads"))
+            arg_list = (safe_path(clean), os.path.join(".",a.get('path'),".", "uploads"))
         elif tool_id == 2: # Cut
             m = re.search(r'-c\s+(\S+)\s+-f\s+(.+)', args_raw)
             if not m:
@@ -432,18 +433,18 @@ def call_tool():
             fp_clean = clean_arg(file_path)
             func = tool.u1.call
             arg_list = (safe_path(fp_clean), chunk_size,
-                        os.path.join(".", "uploads", os.path.basename(fp_clean)))
+                        os.path.join(".",a.get('path'),".", "uploads", os.path.basename(fp_clean)))
         elif tool_id == 3:
-            return jsonify({'success': True, 'message': '使用Assembly以合成文件\n使用cut以分割文件,用法 -c 分割块大小 -f 文件目录'}), 201
+            return jsonify({'success': True, 'message': '使用Assembly以合成文件\n使用cut以分割文件,用法 -c 分割块大小 -f 文件(从根目录起)'}), 201
         elif tool_id == 4:
             func = time.sleep
             arg_list = (10,)
         elif tool_id == 5:
             func = zipe
-            arg_list = (clean,)
+            arg_list = (clean,a.get("path"))
         elif tool_id == 6:
             func = download
-            arg_list = (clean,)   # task_id 和 cancel_event 由 worker 注入
+            arg_list = (clean,a.get('path'))   # task_id 和 cancel_event 由 worker 注入
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
@@ -454,7 +455,8 @@ def call_tool():
                 'error': '',
                 'tool_id': tool_id,
                 'progress': {'total': 0, 'current': 0},
-                'cancel_event': Event()
+                'cancel_event': Event(),
+                'path': a.get("path")
             }
         task_queue.put((task_id, func, arg_list, tool_id))
         return jsonify({'success': True, 'task_id': task_id}), 202
@@ -588,6 +590,36 @@ def delete_item(item_path):
         logging.error(str(e))
         return jsonify({'success': False, 'error': ""}), 500
 
+@app.route('/share_put',methods=["POST"])
+@login_required
+def share_put():
+    global share_dict
+
+    a = dict(request.json)
+    file = a.get('file')
+    u =str(uuid.uuid4())
+    share_dict[u] = file
+    host = request.host_url
+    return jsonify({"link": str(host+"share_get/"+u)})
+
+@app.route('/share_get/<path:uuid>')
+def down(uuid):
+    try:
+        file_path = share_dict.get(uuid,"")
+    except:
+        abort(404)
+    try:
+        full = safe_path(file_path)
+    except ValueError:
+        abort(404)
+    if not os.path.isfile(full): abort(404)
+    dirname = os.path.dirname(full)
+    filename = os.path.basename(full)
+    resp = make_response(send_from_directory(dirname, filename, as_attachment=True))
+    resp.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(filename)}"
+    return resp
+
+
 @app.route('/api/clear-all', methods=['DELETE'])
 @login_required
 def clear_all():
@@ -619,9 +651,6 @@ def download_file(file_path):
     resp.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(filename)}"
     return resp
 
-@app.route("/console")
-def ss():
-    abort(404)
 
 # ==================== 大文件分卷上传 API ====================
 @app.route('/api/chunk/init', methods=['POST'])
@@ -789,6 +818,8 @@ def w():
             elif a.lower().startswith("ls"):
                 sss = generate_tree(os.path.join(".","uploads",a.replace("ls","")))
                 print(sss)
+            elif a == "load":
+                load_html()
             elif a.lower().startswith('debug'):
                 ddd = a.lower().replace("debug","").strip()
                 if ddd == "open":

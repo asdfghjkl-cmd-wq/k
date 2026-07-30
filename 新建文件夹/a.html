@@ -77,7 +77,10 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
   <button class="btn btn-outline" id="newFolderBtn">新建文件夹</button>
   <button class="btn btn-danger" id="clearSelBtn">清空选择</button>
 </div>
-<div class="status" id="statusMsg"></div>
+<div class="status" id="statusMsg">
+
+  
+</div>
 <!-- 下载任务进度容器 -->
 <div id="taskProgressContainer"></div>
 <!-- 多文件上传进度区域 -->
@@ -438,6 +441,7 @@ function renderFileList(items) {
                   <div class="file-name">${item.name}</div>
                   <div class="file-meta">${size} | ${item.modified || ''}</div>
                 </div>
+                <button class="btn btn-outline btn-small" onclick="share('${itemPath.replace(/'/g, "\\'")}')">生成分享链接</button>
                 <a href="/download/${encodeURIComponent(itemPath)}" class="btn btn-outline btn-small">下载</a>
                 <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'file')">删除</button>
               </div>`;
@@ -465,26 +469,40 @@ function updateBreadcrumb() {
   el.innerHTML = html;
 }
 
+async function share(file_name) {
+  const f = await csrfFetch("/share_put",{
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file: file_name })
+  })
+  if(f.status === 200){
+    s = await f.json()
+    showStatus(s.link,"success")}
+  
+}
+
 async function call_tool_a() {
   const tool = parseInt(document.getElementById('tools_select').value);
   const arg = document.getElementById("args").value;
-  call_tool_b(tool, arg)
+  const path = currentPath;
+  call_tool_b(tool, arg ,path)
 }
 
 async function download() {
+  const path = currentPath;
   const tool = 6;
   const arg = document.getElementById("urls").value;
-  call_tool_b(tool, arg)
+  call_tool_b(tool, arg,path)
 }
 
 // ========== 异步任务进度与取消 ==========
 const activeTaskElements = new Map();
 
-async function call_tool_b(tool, arg) {
+async function call_tool_b(tool, arg, path) {
   let resp = await csrfFetch('/toolcall', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tool: tool, args: arg })
+    body: JSON.stringify({ tool: tool, args: arg ,path: path})
   });
 
   if (resp.status === 401) { showStatus('登录已过期', 'error'); return; }
@@ -627,9 +645,10 @@ async function clearAll() {
 function showStatus(msg, type) {
   const el = document.getElementById('statusMsg');
   el.textContent = msg;
+  el.innerHTML =  '<p>'+msg+'</p>'+'<button class="btn" id="close",onclick="document.getElementById(\'statusMsg\').style.display = \'none\'">X</button>'
   el.className = 'status ' + (type==='success'?'success':'error');
   el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 5000);
+  setTimeout(() => el.style.display = 'none', 10000);
 }
 
 // ========== 大文件分卷上传 ==========
