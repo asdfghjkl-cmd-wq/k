@@ -820,6 +820,7 @@ def w():
                 print(sss)
             elif a == "load":
                 load_html()
+                print("fuck",flush=True)
             elif a.lower().startswith('debug'):
                 ddd = a.lower().replace("debug","").strip()
                 if ddd == "open":

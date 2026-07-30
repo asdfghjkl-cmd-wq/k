@@ -78,8 +78,10 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
   <button class="btn btn-danger" id="clearSelBtn">清空选择</button>
 </div>
 <div class="status" id="statusMsg">
-
+  <div style="float: right;"><a href="javascript:closestatus()" style="color: rgb(255, 0, 0);"> X</a> </div>
+    <div id="stw"></div>
   
+
 </div>
 <!-- 下载任务进度容器 -->
 <div id="taskProgressContainer"></div>
@@ -166,7 +168,7 @@ let selectedFiles = [];
 let uploading = false;
 let activeUploads = 0;
 const MAX_CONCURRENT = 3;
-
+let tid;
 // ========== CSRF Token 辅助函数 ==========
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -644,11 +646,18 @@ async function clearAll() {
 
 function showStatus(msg, type) {
   const el = document.getElementById('statusMsg');
-  el.textContent = msg;
-  el.innerHTML =  '<p>'+msg+'</p>'+'<button class="btn" id="close",onclick="document.getElementById(\'statusMsg\').style.display = \'none\'">X</button>'
+  const dd = document.getElementById('stw');
+
+  dd.innerHTML =  '<p>'+msg+'</p>';
   el.className = 'status ' + (type==='success'?'success':'error');
   el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 10000);
+  tid = setTimeout(() => el.style.display = 'none', 10000);
+}
+
+function closestatus() {
+  document.getElementById("statusMsg").style.display = 'none';
+  clearTimeout(tid)
+
 }
 
 // ========== 大文件分卷上传 ==========
