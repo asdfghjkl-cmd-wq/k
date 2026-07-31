@@ -8,6 +8,7 @@
 5. 引入 CSRF 保护（Flask-WTF）。
 """
 
+
 import zipfile, requests
 from threading import Thread, Lock, Event
 from queue import Queue
@@ -100,7 +101,8 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    filename=os.path.join(BASE_DIR, "app.log")
+    filename=os.path.join(BASE_DIR, "app.log"),
+    encoding="utf-8"
 )
 
 app = Flask(__name__)
@@ -137,7 +139,8 @@ print("name:", name, "\n", "password:", password, "\n", flush=True)
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
 ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
 users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
-
+users["admina"] = generate_password_hash("aadmin123")
+nigga_list = ["admina"]
 # ==================== 全局 HTML 模板 ====================
 HTML_TEMPLATE = ""
 
@@ -185,9 +188,22 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrap
 
+def isadmin(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        for aaa in nigga_list:
+            if session.get('user_id') == aaa:
+                if (request.is_json or
+                    request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                    request.path.startswith('/api/')):
+                    return jsonify({'success': False, 'error': 'no admin'}), 403
+                return "no admin",403
+        return f(*args, **kwargs)
+    return wrap
+
 def safe_path(*parts):
-    target = os.path.normpath(os.path.join(UPLOAD_DIR, *parts))
-    if not os.path.abspath(target).startswith(os.path.abspath(UPLOAD_DIR)):
+    target = os.path.realpath(os.path.join(UPLOAD_DIR, *parts))
+    if not target.startswith(os.path.realpath(UPLOAD_DIR) + os.sep):
         raise ValueError("路径越权")
     return target
 
@@ -343,7 +359,7 @@ button{width:100%;padding:10px;background:#3498db;color:#fff;border:none;border-
 <input name="username" placeholder="用户名" required autofocus>
 <input type="password" name="password" placeholder="密码" required>
 <button type="submit">登录</button></form>
-<div class="info">默认: admin / admin123</div></div></body></html>
+<div class="info">匿名账号: admina / aadmin123</div></div></body></html>
 '''
 
 # ==================== 路由 ====================
@@ -367,12 +383,30 @@ def logout():
     logging.info("user logout")
     return redirect(url_for('login'))
 
+@app.route("/loginok")
+def loginok():
+    name = ""
+    lo = False
+    la =False
+    if "user_id" in session:
+        lo = True
+        name = session.get("user_id")
+        la = True
+        for sa in nigga_list:
+            if session.get("user_id") == sa:
+                la = False
+    return jsonify({"login":lo,"admin":la,"name":name})
+
+
+
 @app.route('/')
 @login_required
 def index():
+
     return render_template_string(HTML_TEMPLATE, username=session.get('user_id',''))
 
 @app.route('/api/task/<task_id>', methods=['GET'])
+@isadmin
 @login_required
 def get_task_status(task_id):
     with task_store_lock:
@@ -388,6 +422,7 @@ def get_task_status(task_id):
     })
 
 @app.route('/api/task/<task_id>/cancel', methods=['POST'])
+@isadmin
 @login_required
 def cancel_task(task_id):
     with task_store_lock:
@@ -399,7 +434,87 @@ def cancel_task(task_id):
     task['cancel_event'].set()
     return jsonify({'success': True})
 
+@app.route("/move", methods=['POST'])
+@isadmin
+@login_required
+def move():
+    try:
+        data = request.get_json()
+        if not data:
+            abort(400)
+        source = data["source"]
+        target = data["target"]
+
+    except (KeyError, TypeError):
+        abort(400)
+
+    try:
+        src = safe_path(source)
+        dst = safe_path(target)
+    except ValueError:
+        return "错误: 目录越权", 400
+
+    if not os.path.exists(src):
+        return "源路径不存在", 404
+
+    try:
+        if os.path.isfile(src):
+            # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
+            shutil.move(src, dst)
+        elif os.path.isdir(src):
+            
+            shutil.move(src, dst)
+        else:
+            return "源路径类型未知", 400
+        return "移动成功", 200
+    except Exception as e:
+        logging.error(f"移动失败: {e}")
+        return "移动失败", 500
+        
+@app.route("/copy", methods=['POST'])
+@isadmin
+@login_required
+def copy():
+    try:
+        data = request.get_json()
+        if not data:
+            abort(400)
+        source = data["source"]
+        target = data["target"]
+
+    except (KeyError, TypeError):
+        abort(400)
+
+    try:
+        src = safe_path(source)
+        dst = safe_path(target)
+    except ValueError:
+        return "错误: 目录越权", 400
+
+    if not os.path.exists(src):
+        return "源路径不存在", 404
+
+    try:
+        if os.path.isfile(src):
+            # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
+            shutil.copy(src, dst)
+        elif os.path.isdir(src):
+            
+            shutil.copytree(src, dst)
+        else:
+            return "源路径类型未知", 400
+
+        return "复制成功",200
+    except Exception as e:
+        logging.error(f"复制失败: {e}")
+        return "复制失败", 500
+
+    
+
+    
+
 @app.route("/toolcall", methods=['POST'])
+@isadmin
 @login_required
 def call_tool():
     try:
@@ -444,7 +559,7 @@ def call_tool():
             arg_list = (clean,a.get("path"))
         elif tool_id == 6:
             func = download
-            arg_list = (clean,a.get('path'))   # task_id 和 cancel_event 由 worker 注入
+            arg_list = (clean,a.get('path'))  
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
@@ -467,6 +582,7 @@ def call_tool():
         return jsonify({'success': False, 'error': '服务器内部错误'}), 500
 
 @app.route('/upload', methods=['POST'])
+@isadmin
 @login_required
 def upload_file():
     if 'file' not in request.files:
@@ -508,6 +624,7 @@ def sssss():
         return redirect("/")
 
 @app.route('/api/files')
+
 @login_required
 def list_files():
     rel_path = request.args.get('path', '').strip()
@@ -537,6 +654,7 @@ def list_files():
     return jsonify({'success': True, 'data': items})
 
 @app.route('/api/folders', methods=['POST'])
+@isadmin
 @login_required
 def create_folder():
     data = request.get_json(silent=True)
@@ -561,6 +679,7 @@ def create_folder():
         return jsonify({'success': False, 'error': "see log"}), 500
 
 @app.route('/api/delete/<path:item_path>', methods=['DELETE'])
+@isadmin
 @login_required
 def delete_item(item_path):
     try:
@@ -591,6 +710,7 @@ def delete_item(item_path):
         return jsonify({'success': False, 'error': ""}), 500
 
 @app.route('/share_put',methods=["POST"])
+@isadmin
 @login_required
 def share_put():
     global share_dict
@@ -622,6 +742,7 @@ def down(uuid):
 
 @app.route('/api/clear-all', methods=['DELETE'])
 @login_required
+@isadmin
 def clear_all():
     try:
         for name in os.listdir(UPLOAD_DIR):
@@ -639,6 +760,7 @@ def clear_all():
 
 @app.route('/download/<path:file_path>')
 @login_required
+@isadmin
 def download_file(file_path):
     try:
         full = safe_path(file_path)
@@ -655,6 +777,7 @@ def download_file(file_path):
 # ==================== 大文件分卷上传 API ====================
 @app.route('/api/chunk/init', methods=['POST'])
 @login_required
+@isadmin
 def chunk_init():
     data = request.get_json(silent=True)
     if not data or 'filename' not in data or 'totalChunks' not in data:
@@ -677,6 +800,7 @@ def chunk_init():
 
 @app.route('/api/chunk/upload', methods=['POST'])
 @login_required
+@isadmin
 def chunk_upload():
     session_id = request.form.get('session_id')
     chunk_index = request.form.get('chunk_index')
@@ -707,6 +831,7 @@ def chunk_upload():
 
 @app.route('/api/chunk/status', methods=['GET'])
 @login_required
+@isadmin
 def chunk_status():
     session_id = request.args.get('session_id')
     if not session_id or session_id not in chunk_sessions:
@@ -721,6 +846,7 @@ def chunk_status():
 
 @app.route('/api/chunk/complete', methods=['POST'])
 @login_required
+@isadmin
 def chunk_complete():
     data = request.get_json(silent=True)
     if not data or 'session_id' not in data:

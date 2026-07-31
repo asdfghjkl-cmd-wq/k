@@ -96,6 +96,24 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
 </div>
 </div>
 
+<div  class="modal" id="file">
+  <div class="modal-content">
+    <h3>操作文件/文件夹</h3>
+    <select id="file_action">
+      <option value=1>移动</option>
+      <option value=3>复制</option>
+    </select>
+  <br>
+    目标路径: <input type="text" id="file_path" placeholder="目标路径">
+    <br>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="upok = 2">取消</button>
+      <button class="btn btn-success" onclick="ca()">操作</button>
+    </div>
+  </div>
+</div>
+
 <!-- 新建文件夹模态框 -->
 <div class="modal" id="folderModal">
   <div class="modal-content">
@@ -281,7 +299,7 @@ function clearSelection() {
   updateSelectedList();
   document.getElementById('fileInput').value = '';
 }
-
+let upok = 0;
 // ========== 普通上传 ==========
 function uploadFiles() {
   if (!selectedFiles.length) {
@@ -433,6 +451,7 @@ function renderFileList(items) {
                 <div class="file-info">
                   <span class="folder-name" onclick="nav('${itemPath.replace(/'/g, "\\'")}')">${item.name}</span>
                 </div>
+                <button class="btn btn-small" onclick="file_call('${itemPath.replace(/'/g, "\\'")}', 'dir')">操作</button>
                 <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'dir')">删除</button>
               </div>`;
     } else {
@@ -444,6 +463,7 @@ function renderFileList(items) {
                   <div class="file-meta">${size} | ${item.modified || ''}</div>
                 </div>
                 <button class="btn btn-outline btn-small" onclick="share('${itemPath.replace(/'/g, "\\'")}')">生成分享链接</button>
+                <button class="btn btn-small" onclick="file_call('${itemPath.replace(/'/g, "\\'")}', 'dir')">操作</button>
                 <a href="/download/${encodeURIComponent(itemPath)}" class="btn btn-outline btn-small">下载</a>
                 <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'file')">删除</button>
               </div>`;
@@ -476,11 +496,13 @@ async function share(file_name) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ file: file_name })
-  })
+  });
   if(f.status === 200){
-    s = await f.json()
-    showStatus(s.link,"success")}
-  
+    const s = await f.json();        // 修复：添加 const 声明与 await
+    showStatus(s.link,"success");
+  } else {
+    showStatus("分享失败","error");
+  }
 }
 
 async function call_tool_a() {
@@ -507,8 +529,10 @@ async function call_tool_b(tool, arg, path) {
     body: JSON.stringify({ tool: tool, args: arg ,path: path})
   });
 
-  if (resp.status === 401) { showStatus('登录已过期', 'error'); return; }
-  if (resp.status === 404) { showStatus('工具不存在', 'error'); return; }
+  if (resp.status === 401) { showStatus('登录已过期', 'error'); document.getElementById('fuck').style.display = 'none';
+  document.getElementById('helo').style.display = 'none';return; }
+  if (resp.status === 404) { showStatus('工具不存在', 'error'); document.getElementById('fuck').style.display = 'none';
+  document.getElementById('helo').style.display = 'none';return; }
 
   let data = await resp.json();
   if (resp.status === 201) {
@@ -536,6 +560,7 @@ async function call_tool_b(tool, arg, path) {
     if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
     let statusData = await statusResp.json();
 
+    // 安全访问进度对象
     if (tool === 6 && progressElem && statusData.progress) {
       const { total, current } = statusData.progress;
       const bar = progressElem.querySelector('.progress-inner');
@@ -560,6 +585,8 @@ async function call_tool_b(tool, arg, path) {
     }
   };
   poll();
+  document.getElementById('fuck').style.display = 'none';
+  document.getElementById('helo').style.display = 'none';
 }
 
 function createDownloadProgress(taskId) {
@@ -653,11 +680,117 @@ function showStatus(msg, type) {
   el.style.display = 'block';
   tid = setTimeout(() => el.style.display = 'none', 10000);
 }
+async function file_call(p) {
+  upok = 0;
+  document.getElementById('file').style.display = 'flex';
+  filess(p);
+  
+}
+
+async function ca() {
+  const a = document.getElementById("file_action").value;
+  if (a === "1") {
+    upok = 1
+  }
+  else if (a === "3"){
+    upok = 3
+  }
+}
+// 修复 file 函数：setTimeout 改为箭头函数，防止立即调用
+async function filess(path) {
+  if (upok === 0) {
+    setTimeout(() => filess(path), 500);   // 修复：使用箭头函数
+  } else if (upok === 1) {
+    moveItem(path);
+    document.getElementById('file').style.display = 'none';
+  } else if (upok === 2) {
+    document.getElementById('file').style.display = 'none';
+  } else if (upok === 3) {
+    copyItem(path);
+    document.getElementById('file').style.display = 'none';
+
+  }
+}
+
+// 修复 fileItem：匹配后端 /file 接口要求 {source, target, args}
+async function moveItem(Path) {
+  const targetPath = document.getElementById('file_path').value.trim();
+
+  if (!targetPath) { alert('请输入目标路径'); return; }
+  try {
+    const resp = await csrfFetch('/move', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        source: Path,
+        target: targetPath
+      })
+    });
+    if (resp.status === 401) { showStatus('登录已过期','error'); return; }
+    // 后端可能未返回 JSON（成功时无响应体），这里做兼容处理
+    let success = true;
+    try {
+      const data = await resp.json();
+      success = data.success !== false;
+    } catch(e) {
+      // 如果响应体不是 JSON，则视为成功（状态码 200）
+      success = resp.status === 200;
+    }
+    if (success) {
+      showStatus('移动成功','success');
+      document.getElementById('file').style.display = 'none';
+      refresh();
+    } else {
+      showStatus('移动失败','error');
+    }
+  } catch (e) { showStatus('网络错误','error'); }
+}
+
+
+
+
+
+
+
+
+
+async function copyItem(Path) {
+  const targetPath = document.getElementById('file_path').value.trim();
+
+  if (!targetPath) { alert('请输入目标路径'); return; }
+  try {
+    const resp = await csrfFetch('/copy', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        source: Path,
+        target: targetPath
+      })
+    });
+    if (resp.status === 401) { showStatus('登录已过期','error'); return; }
+    // 后端可能未返回 JSON（成功时无响应体），这里做兼容处理
+    let success = true;
+    try {
+      const data = await resp.json();
+      success = data.success !== false;
+    } catch(e) {
+      // 如果响应体不是 JSON，则视为成功（状态码 200）
+      success = resp.status === 200;
+    }
+    if (success) {
+      showStatus('复制成功','success');
+      document.getElementById('file').style.display = 'none';
+      refresh();
+    } else {
+      showStatus('复制失败','error');
+    }
+  } catch (e) { showStatus('网络错误','error'); }
+}
+
 
 function closestatus() {
   document.getElementById("statusMsg").style.display = 'none';
-  clearTimeout(tid)
-
+  clearTimeout(tid);
 }
 
 // ========== 大文件分卷上传 ==========
@@ -675,9 +808,16 @@ async function startBigUpload() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({filename: file.name, totalChunks: totalChunks, folder: currentPath})
   });
-  if (resp.status === 401) { showStatus('登录已过期','error'); return; }
+  // 修复：401 或初始化失败时停止后续操作
+  if (resp.status === 401) {
+    showStatus('登录已过期','error');
+    return;
+  }
   let data = await resp.json();
-  if (!data.success) { statusDiv.textContent = '初始化失败: ' + data.error; return; }
+  if (!data.success) {
+    statusDiv.textContent = '初始化失败: ' + data.error;
+    return;
+  }
   const sessionId = data.session_id;
   statusDiv.textContent = `开始上传 (0/${totalChunks})`;
 
