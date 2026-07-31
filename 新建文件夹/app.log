@@ -806,3 +806,139 @@
 2026-07-31 17:04:29 - root - INFO - user logining.from 127.0.0.1
 2026-07-31 17:04:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 17:04:29] "GET /login HTTP/1.1" 200 -
 2026-07-31 17:04:32 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 17:04:32] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:26:40 - root - INFO - flask create ok
+2026-07-31 19:26:41 - root - INFO - html load ok
+2026-07-31 19:26:41 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-31 19:26:41 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-31 19:27:25 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:25] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:26 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:26] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:26 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:26] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:26 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:26 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:26] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:27 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:27] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:27 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:27] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:27 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:27 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:27] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:28 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:28 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:28 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:28] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:29 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:29] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:29] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:29] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:29 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:29] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:29] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:29 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:29] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:30 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:30 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:30 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:30 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:30] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:27:49 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:49] "GET / HTTP/1.1" 200 -
+2026-07-31 19:27:49 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:49] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:27:49 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:49] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:27:49 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:27:49 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:27:49] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:43:05 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:05] "GET / HTTP/1.1" 200 -
+2026-07-31 19:43:05 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:05] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:43:05 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:05] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:43:05 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:05 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:05] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:43:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:13] "GET / HTTP/1.1" 200 -
+2026-07-31 19:43:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:13] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:43:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:13] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:43:13 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:13] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:43:46 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:46] "GET /loginok HTTP/1.1" 200 -
+2026-07-31 19:43:47 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:47] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:43:47 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:47 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:47] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:43:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:52 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:52] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:43:52 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:52] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:43:52 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:52 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:52] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:43:55 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:55 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:55] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-07-31 19:43:55 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:55] "GET / HTTP/1.1" 200 -
+2026-07-31 19:43:55 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:55] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:43:56 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:56] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:43:56 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:43:56 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:43:56] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:05 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:05] "[31m[1mPOST /upload HTTP/1.1[0m" 403 -
+2026-07-31 19:44:05 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:05] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:44:08 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:08] "[32mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 302 -
+2026-07-31 19:44:08 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:08 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:08] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:13 - root - INFO - user logout
+2026-07-31 19:44:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:13] "[32mGET /logout HTTP/1.1[0m" 302 -
+2026-07-31 19:44:13 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:13] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:13] "[32mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 302 -
+2026-07-31 19:44:13 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:13] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:13] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:44:13 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:13 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:13] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:16 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "GET / HTTP/1.1" 200 -
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "[32mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 302 -
+2026-07-31 19:44:17 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:44:17 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:44:17 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:17] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:44:24 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:24] "POST /upload HTTP/1.1" 200 -
+2026-07-31 19:44:24 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:24] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:44:36 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:36] "POST /copy HTTP/1.1" 200 -
+2026-07-31 19:44:36 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:36] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:44:40 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:40] "DELETE /api/delete/a HTTP/1.1" 200 -
+2026-07-31 19:44:40 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:44:40] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:53:18 - root - INFO - user logout
+2026-07-31 19:53:18 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:18] "[32mGET /logout HTTP/1.1[0m" 302 -
+2026-07-31 19:53:18 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:53:18 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:18] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:53:18 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:18] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:53:18 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:53:18 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:18] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:53:19 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:53:19 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:19] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-07-31 19:53:19 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:19] "GET / HTTP/1.1" 200 -
+2026-07-31 19:53:19 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:19] "GET /api/files?path= HTTP/1.1" 200 -
+2026-07-31 19:53:19 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:19] "[32mGET /favicon.ico HTTP/1.1[0m" 302 -
+2026-07-31 19:53:19 - root - INFO - user logining.from 127.0.0.1
+2026-07-31 19:53:19 - werkzeug - INFO - 127.0.0.1 - - [31/Jul/2026 19:53:19] "GET /login HTTP/1.1" 200 -
+2026-07-31 19:54:16 - root - INFO - flask create ok
+2026-07-31 19:54:16 - root - INFO - html load ok
+2026-07-31 19:54:16 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-31 19:54:16 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-31 19:54:19 - root - INFO - exec:ls
+2026-07-31 19:54:53 - root - INFO - flask create ok
+2026-07-31 19:54:54 - root - INFO - html load ok
+2026-07-31 19:54:54 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.1.16.252:5000
+2026-07-31 19:54:54 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-07-31 19:54:55 - root - INFO - exec:ls

