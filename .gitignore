@@ -1,28 +1,28 @@
-.新建文件夹/uploads/metadata/0001.data.json
-新建文件夹/uploads/metadata/a.zip.json
-新建文件夹/uploads/metadata/file.json
-新建文件夹/uploads/metadata/test (1).txt.json
-新建文件夹/uploads/metadata/test.txt.json
-新建文件夹/uploads/0001.data
-新建文件夹/uploads/a.zip
-新建文件夹/uploads/file
-新建文件夹/uploads/test (1).txt
-新建文件夹/uploads/test.txt
+.f/uploads/metadata/0001.data.json
+f/uploads/metadata/a.zip.json
+f/uploads/metadata/file.json
+f/uploads/metadata/test (1).txt.json
+f/uploads/metadata/test.txt.json
+f/uploads/0001.data
+f/uploads/a.zip
+f/uploads/file
+f/uploads/test (1).txt
+f/uploads/test.txt
 a/video
 .vscode/settings.json
-新建文件夹/a/0001.data
-新建文件夹/a/file
-新建文件夹/uploads/metadata/0001.data.json
+f/a/0001.data
+f/a/file
+f/uploads/metadata/0001.data.json
 a/music/六年级 (U1-U2).MP3
 new2/__pycache__/ls.cpython-313.pyc
 
-新建文件夹/de.lock
+f/de.lock
 
-新建文件夹/uploads
-新建文件夹/n.py
-新建文件夹/n.txt
-新建文件夹/uploads/s.txt
-新建文件夹/app.log
-新建文件夹/tool/__pycache__/__init__.cpython-313.pyc
-新建文件夹/tool/__pycache__
-新建文件夹/tool/__pycache__/u1.cpython-313.pyc
+f/uploads
+f/n.py
+f/n.txt
+f/uploads/s.txt
+f/app.log
+f/tool/__pycache__/__init__.cpython-313.pyc
+f/tool/__pycache__
+f/tool/__pycache__/u1.cpython-313.pyc
