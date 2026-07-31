@@ -985,18 +985,24 @@ def fix_userl():
         if user not in nigga_list:
             if user not in user_list:
                 user_list.append(user)
+
     a = 0
     for user in user_list:
         if user in nigga_list:
             nigga_list.remove(user)
         if user_list.count(user) != 1:
             user_list.pop(a)
+        if user not in users:
+            user_list.remove(user)
         a += 1
     a = 0
     for user in nigga_list:
         if nigga_list.count(user) != 1:
             nigga_list.pop(a)
+        if user not in users:
+            nigga_list.remove(user)
         a += 1
+    print("fix")
 
 
 
