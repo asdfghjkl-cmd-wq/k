@@ -7,6 +7,8 @@
 4. 优化并发控制，避免进度计数异常（前端已建议修复，此处确保后端稳健）。
 5. 引入 CSRF 保护（Flask-WTF）。
 """
+import pickle
+
 from markupsafe import escape
 
 import zipfile, requests
@@ -44,6 +46,36 @@ task_store_lock = Lock()
 
 MAX_WORKERS = 2
 task_queue = Queue()
+def save_user():
+    global user_list,nigga_list,users
+    try:
+        n = {
+            "ud":users,
+            'ul':user_list,
+            'nl':nigga_list
+        }
+        with open(f"{BASE_DIR}\\user.pkl","wb") as d:
+            pickle.dump(n,d)
+        print("save okay",flush=True)
+    except: 
+        print("save over",flush=True)
+
+def load_user():
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
+    ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
+    users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
+    users["admina"] = generate_password_hash("aadmin123")
+    nigga_list = ["admina"]
+    user_list = [os.environ.get('ADMIN_USERNAME', name)]
+    try:
+        with open(f"{BASE_DIR}\\user.pkl","rb") as l:
+            n = dict(pickle.load(l))
+        users = n.get("ud")
+        user_list = n.get("ul")
+        nigga_list = n.get("nl")
+        return users,user_list,nigga_list
+    except:
+        return users,user_list,nigga_list
 
 def worker():
     while True:
@@ -136,11 +168,7 @@ name = ran_str(4)
 password = ran_str(8)
 print("name:", name, "\n", "password:", password, "\n", flush=True)
 
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
-ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
-users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
-users["admina"] = generate_password_hash("aadmin123")
-nigga_list = ["admina"]
+users,user_list,nigga_list = load_user()
 # ==================== 全局 HTML 模板 ====================
 HTML_TEMPLATE = ""
 
@@ -952,13 +980,35 @@ def restart_service():
     python = sys.executable
     os.execl(python, python, *sys.argv)
 
+def fix_userl():
+    for user in users.keys():
+        if user not in nigga_list:
+            if user not in user_list:
+                user_list.append(user)
+    a = 0
+    for user in user_list:
+        if user in nigga_list:
+            nigga_list.remove(user)
+        if user_list.count(user) != 1:
+            user_list.pop(a)
+        a += 1
+    a = 0
+    for user in nigga_list:
+        if nigga_list.count(user) != 1:
+            nigga_list.pop(a)
+        a += 1
+
+
+
 def w():
     time.sleep(1)
     while True:
+        if len(nigga_list)+len(user_list) != len(users):fix_userl()
+
         a = input("exec:").strip()
         logging.info(f"exec:{a}")
         try:
-            if a == "exit":
+            if a == "exit" or a == "q":
                 os._exit(0)
             elif a.lower().startswith("ls"):
                 sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","")))
@@ -977,11 +1027,81 @@ def w():
                     restart_service()
             elif a.lower() == "restart":
                 restart_service()
+            elif a.lower().startswith("adduser"):
+                n = a.split(" ")
+                for i in range(len(n)):
+                 if n[i] == "":
+                     n.pop(i)
+                if len(n) == 3:
+                    username = n[1]
+                    password = n[2]
+                    users[username] = generate_password_hash(password)
+                    user_list.append(username)
+                    print(f"用户 {username} 已添加")
+                    save_user()
+            elif a.lower().startswith("deluser"):
+                n = a.split(" ")
+                for i in range(len(n)):
+                 if n[i] == "":
+                     n.pop(i)
+                if len(n) == 2:
+                    username = n[1]
+                    if username in users and username in user_list:
+                        del users[username]
+                        user_list.remove(username)
+                        print(f"用户 {username} 已删除")
+                        save_user()
+                    if username in users and username in nigga_list:
+                            del users[username]
+                            nigga_list.remove(username)
+                            print(f"用户 {username} 已删除")
+                            save_user()
+            elif a.lower().startswith("listuser"):
+                print("当前用户列表:")
+                for user in users.keys():
+                    if user in nigga_list:print(f"- {user} forbid")
+                    elif user in user_list:print(f"- {user} authorized")
+                    else:user_list.append(user);print(f"- {user} authorized")
+
+                save_user()
+            elif a.lower().startswith("addnigga"):
+                n = a.split(" ")
+                for i in range(len(n)):
+                    if n[i] == "":
+                        n.pop(i)
+                    if len(n) == 2:
+                        username = n[1]
+                        if username not in users:
+                            print(f"{username}不存在")
+                        elif username not in nigga_list:
+                            nigga_list.append(username)
+                            user_list.remove(username)
+                            print(f"用户 {username} 已移入黑名单")
+                            save_user()
+            elif a.lower().startswith("delnigga"):
+                n = a.split(" ")
+                for i in range(len(n)):
+                    if n[i] == "":
+                        n.pop(i)
+                if len(n) == 2:
+                    username = n[1]
+                    if username not in users:
+                        print(f"{username}不存在")
+                    elif username not in user_list:
+                        nigga_list.remove(username)
+                        user_list.append(username)
+                        print(f"用户 {username} 已移出黑名单")
+                        save_user()
+            elif app.debug and a.lower().startswith("get") :
+                n = a.split(" ")
+                print(eval(n[1]),flush=True)
+            
             else: print("not found")
         except Exception as e:
             traceback.print_exc()
             logging.error(f"exec error:{str(e)}")
-
+import keyboard
+keyboard.add_hotkey("ctrl+z+x",os._exit,args=(0,))
 if __name__ == '__main__':
     print(f"🌐 启动：http://0.0.0.0:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
