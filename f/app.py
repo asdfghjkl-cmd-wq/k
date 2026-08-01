@@ -1018,12 +1018,12 @@ def w():
         if len(nigga_list)+len(user_list) != len(users):fix_userl()
 
         a = input("exec:").strip()
-        logging.info(f"exec:{a}")
+        logging.info(f"exec:{a.split(" ")[0:2]}")
         try:
             if a == "exit" or a == "q":
                 os._exit(0)
             elif a.lower().startswith("ls"):
-                sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","")))
+                sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","").strip()))
                 print(sss)
             elif a == "load":
                 load_html()
