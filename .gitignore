@@ -15,9 +15,7 @@ f/a/file
 f/uploads/metadata/0001.data.json
 a/music/六年级 (U1-U2).MP3
 new2/__pycache__/ls.cpython-313.pyc
-
 f/de.lock
-
 f/uploads
 f/n.py
 f/n.txt
@@ -26,7 +24,4 @@ f/app.log
 f/tool/__pycache__/__init__.cpython-313.pyc
 f/tool/__pycache__
 f/tool/__pycache__/u1.cpython-313.pyc
-
-./f/user.pkl
-f/user.pkl
 f/user.pkl
