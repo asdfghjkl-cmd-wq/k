@@ -47,16 +47,17 @@ task_store_lock = Lock()
 MAX_WORKERS = 2
 task_queue = Queue()
 def save_user():
-    global user_list,nigga_list,users
+    global user_list,nigga_list,users,admin
     try:
         n = {
             "ud":users,
             'ul':user_list,
-            'nl':nigga_list
+            'nl':nigga_list,
+            "admin":admin
         }
         with open(f"{BASE_DIR}\\user.pkl","wb") as d:
             pickle.dump(n,d)
-        print("save okay",flush=True)
+        
     except: 
         print("save over",flush=True)
 
@@ -67,15 +68,19 @@ def load_user():
     users["admina"] = generate_password_hash("aadmin123")
     nigga_list = ["admina"]
     user_list = [os.environ.get('ADMIN_USERNAME', name)]
+    admin = os.environ.get('ADMIN_USERNAME', name)
     try:
         with open(f"{BASE_DIR}\\user.pkl","rb") as l:
             n = dict(pickle.load(l))
         users = n.get("ud")
         user_list = n.get("ul")
         nigga_list = n.get("nl")
-        return users,user_list,nigga_list
+        admin = n.get('admin')
+        ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
+        ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
+        return users,user_list,nigga_list,admin
     except:
-        return users,user_list,nigga_list
+        return users,user_list,nigga_list,admin
 
 def worker():
     while True:
@@ -168,7 +173,7 @@ name = ran_str(4)
 password = ran_str(8)
 print("name:", name, "\n", "password:", password, "\n", flush=True)
 
-users,user_list,nigga_list = load_user()
+users,user_list,nigga_list,admin = load_user()
 # ==================== 全局 HTML 模板 ====================
 HTML_TEMPLATE = ""
 
@@ -207,7 +212,8 @@ if not app.debug:
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if 'user_id' not in session:
+        print(session.get('user_id'),"       ",'user_id' not in session,flush=True)
+        if 'user_id' not in session or session.get('user_id') not in list(users.keys()):
             if (request.is_json or
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
                 request.path.startswith('/api/')):
@@ -1062,14 +1068,20 @@ def w():
                             nigga_list.remove(username)
                             print(f"用户 {username} 已删除")
                             save_user()
+
             elif a.lower().startswith("listuser"):
+                global admin
                 print("当前用户列表:")
                 for user in users.keys():
-                    if user in nigga_list:print(f"- {user} forbid")
-                    elif user in user_list:print(f"- {user} authorized")
-                    else:user_list.append(user);print(f"- {user} authorized")
-
+                    a = ""
+                    if user in nigga_list:a += " forbid"
+                    elif user in user_list:a += " authorized"
+                 
+                    else:user_list.append(user);a += " authorized"
+                    if user == admin:a += " admin"
+                    print(f"--{user} {a}")
                 save_user()
+                
             elif a.lower().startswith("addnigga"):
                 n = a.split(" ")
                 for i in range(len(n)):
@@ -1098,6 +1110,19 @@ def w():
                         user_list.append(username)
                         print(f"用户 {username} 已移出黑名单")
                         save_user()
+            elif a.lower().startswith("setadmin"):
+                n = a.split(" ")
+                for i in range(len(n)):
+                    if n[i] == "":
+                        n.pop(i)
+                if len(n) == 2:
+                    username = n[1]
+                    if username not in users:
+                        print(f"{username}不存在")
+                    elif username in user_list :
+                        admin = username
+                        print(f"用户 {username} 已设为管理员")
+                        save_user()
             elif app.debug and a.lower().startswith("get") :
                 n = a.split(" ")
                 print(eval(n[1]),flush=True)
@@ -1107,7 +1132,7 @@ def w():
             traceback.print_exc()
             logging.error(f"exec error:{str(e)}")
 import keyboard
-keyboard.add_hotkey("ctrl+z+x",os._exit,args=(0,))
+keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
 if __name__ == '__main__':
     print(f"🌐 启动：http://0.0.0.0:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
