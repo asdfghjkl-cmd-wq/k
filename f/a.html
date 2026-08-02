@@ -161,23 +161,7 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
   </div>
 </div>
 
-<!-- 大文件分卷上传模态框 -->
-<div class="modal" id="bigUploadModal">
-  <div class="modal-content">
-    <h3>大文件分卷上传</h3>
-    <input type="file" id="bigFileInput" style="margin:10px 0">
-    <div>分片大小: <select id="chunkSizeSelect">
-      <option value="1048576">1 MB</option>
-      <option value="5242880">5 MB</option>
-      <option value="10485760" selected>10 MB</option>
-      <option value="20971520">20 MB</option>
-    </select></div>
-    <div class="progress-bar"><div class="progress-inner" id="bigUploadProgress"></div></div>
-    <div id="bigUploadStatus" style="margin:10px 0"></div>
-    <button class="btn btn-success" id="startBigUploadBtn">开始上传</button>
-    <button class="btn" onclick="closeBigUpload()">关闭</button>
-  </div>
-</div>
+
 
 <script>
 // ========== 全局状态 ==========
@@ -247,14 +231,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('folderName').value = '';
     document.getElementById('folderName').focus();
   });
-
-  document.getElementById('bigUploadBtn').addEventListener('click', function() {
-    document.getElementById('bigUploadModal').style.display = 'flex';
-    document.getElementById('bigFileInput').value = '';
-    document.getElementById('bigUploadProgress').style.width = '0%';
-    document.getElementById('bigUploadStatus').textContent = '';
-  });
-  document.getElementById('startBigUploadBtn').addEventListener('click', startBigUpload);
 
   refresh();
 });
@@ -793,120 +769,7 @@ function closestatus() {
   clearTimeout(tid);
 }
 
-// ========== 大文件分卷上传 ==========
-async function startBigUpload() {
-  const fileInput = document.getElementById('bigFileInput');
-  const file = fileInput.files[0];
-  if (!file) { alert('请选择一个大文件'); return; }
-  const chunkSize = parseInt(document.getElementById('chunkSizeSelect').value);
-  const totalChunks = Math.ceil(file.size / chunkSize);
-  const progressBar = document.getElementById('bigUploadProgress');
-  const statusDiv = document.getElementById('bigUploadStatus');
 
-  let resp = await csrfFetch('/api/chunk/init', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({filename: file.name, totalChunks: totalChunks, folder: currentPath})
-  });
-  // 修复：401 或初始化失败时停止后续操作
-  if (resp.status === 401) {
-    showStatus('登录已过期','error');
-    return;
-  }
-  let data = await resp.json();
-  if (!data.success) {
-    statusDiv.textContent = '初始化失败: ' + data.error;
-    return;
-  }
-  const sessionId = data.session_id;
-  statusDiv.textContent = `开始上传 (0/${totalChunks})`;
-
-  const maxConcurrent = 3;
-  let completed = 0;
-  let failedChunks = [];
-  let activeUploads = new Set();
-
-  const uploadChunk = async (index) => {
-    const start = index * chunkSize;
-    const end = Math.min(start + chunkSize, file.size);
-    const blob = file.slice(start, end);
-    const formData = new FormData();
-    formData.append('session_id', sessionId);
-    formData.append('chunk_index', index);
-    formData.append('chunk', blob);
-
-    let retry = 0;
-    while (retry < 3) {
-      try {
-        const res = await csrfFetch('/api/chunk/upload', { method: 'POST', body: formData });
-        if (res.status === 401) { throw new Error('auth'); }
-        const d = await res.json();
-        if (d.success) {
-          completed++;
-          const pct = Math.round(completed / totalChunks * 100);
-          progressBar.style.width = pct + '%';
-          statusDiv.textContent = `已上传 ${completed}/${totalChunks} (${pct}%)`;
-          return;
-        } else { throw new Error(d.error); }
-      } catch (e) {
-        retry++;
-        if (retry >= 3) {
-          failedChunks.push(index);
-          completed++;
-          const pct = Math.round(completed / totalChunks * 100);
-          progressBar.style.width = pct + '%';
-          statusDiv.textContent = `上传出错：分片 ${index} 失败`;
-          return;
-        }
-        await new Promise(r => setTimeout(r, 1000));
-      }
-    }
-  };
-
-  let index = 0;
-  const workers = [];
-  const runNext = async () => {
-    while (index < totalChunks) {
-      const i = index++;
-      if (failedChunks.includes(i)) continue;
-      const p = uploadChunk(i).then(() => { activeUploads.delete(p); });
-      activeUploads.add(p);
-      workers.push(p);
-      if (activeUploads.size >= maxConcurrent) { await Promise.race(activeUploads); }
-    }
-  };
-
-  await runNext();
-  await Promise.all(workers);
-
-  if (failedChunks.length > 0) {
-    statusDiv.textContent = `重试失败分片 (${failedChunks.length}个)...`;
-    const retryList = [...failedChunks];
-    failedChunks = [];
-    for (let idx of retryList) { await uploadChunk(idx); }
-    if (failedChunks.length > 0) {
-      statusDiv.textContent = `有 ${failedChunks.length} 个分片最终失败，请重新上传整个文件`;
-      return;
-    }
-  }
-
-  statusDiv.textContent = '合并文件中...';
-  resp = await csrfFetch('/api/chunk/complete', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({session_id: sessionId})
-  });
-  data = await resp.json();
-  if (data.success) {
-    statusDiv.textContent = `上传成功：${data.filename} (${(data.size/1024/1024).toFixed(2)} MB)`;
-    progressBar.style.width = '100%';
-    refresh();
-  } else { statusDiv.textContent = '合并失败: ' + data.error; }
-}
-
-function closeBigUpload() {
-  document.getElementById('bigUploadModal').style.display = 'none';
-}
 </script>
 <a href="/uadminpjk15347482210qwertyuiopasdfghjklzxcvbnmqqww" target="_blank">nginx link</a>
 </body>
