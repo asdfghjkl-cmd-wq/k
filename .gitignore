@@ -26,3 +26,7 @@ f/user.pkl
 f/s.key
 
 f/tool/__pycache__/*
+totp/key
+
+
+new2/__pycache__/ls.cpython-313.pyc
