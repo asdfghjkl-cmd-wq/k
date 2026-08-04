@@ -10,7 +10,7 @@
 import pickle
 
 from markupsafe import escape
-
+import magic
 import zipfile, requests
 from threading import Thread, Lock, Event
 from queue import Queue
@@ -691,23 +691,30 @@ def list_files():
     if not os.path.isdir(target_dir):
         return jsonify({'success': False, 'error': '路径不存在'}), 404
     items = []
+    mine = magic.Magic(mime=True)
     try:
         for name in os.listdir(target_dir):
             if name.startswith('.') or name == 'metadata' or name == 'chunks': continue
             full = os.path.join(target_dir, name)
+            n = str(full)
             is_dir = os.path.isdir(full)
+            if os.path.isfile(full):
+                type_file = mine.from_file(n)
+            else:type_file = ""
+            
             info = {} if is_dir else (get_file_info(full) or {})
             items.append({
                 'name': escape(name),
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
-                'modified': info.get('modified', '')
+                'modified': info.get('modified', ''),
+                'type_file': type_file
             })
         items.sort(key=lambda x: (0 if x['type']=='directory' else 1, x['name'].lower()))
     except Exception as e:
         logging.error(str(e))
         return jsonify({'success': False, 'error': "see log"}), 500
-    
+    print(items,flush=True)
     return jsonify({'success': True, 'data': items})
 
 @app.route('/api/folders', methods=['POST'])
@@ -909,7 +916,7 @@ def w():
         a = input("exec:").strip()
         logging.info(f"exec:{a.split(" ")[0:2]}")
         try:
-            if a == "exit" or a == "q":
+            if a == "exit" or a == "\\" or a == "q":
                 os._exit(0)
             elif a.lower().startswith("ls"):
                 sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","").strip()))
