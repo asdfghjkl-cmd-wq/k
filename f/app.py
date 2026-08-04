@@ -724,14 +724,18 @@ def list_files():
             if os.path.isfile(full):
                 type_file = file_type(mine=mine,path=full)
             else:type_file = ""
-            
+            n = False
+            zip_list = []
+            if type_file in zip_list:
+                n = True
+
             info = {} if is_dir else (get_file_info(full) or {})
             items.append({
                 'name': escape(name),
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
                 'modified': info.get('modified', ''),
-                'type_file': type_file
+                'type_file': n
             })
         items.sort(key=lambda x: (0 if x['type']=='directory' else 1, x['name'].lower()))
     except Exception as e:
