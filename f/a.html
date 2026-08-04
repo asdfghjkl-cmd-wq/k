@@ -508,6 +508,8 @@ async function call_tool_b(tool, arg, path) {
   document.getElementById('helo').style.display = 'none';return; }
   if (resp.status === 404) { showStatus('工具不存在', 'error'); document.getElementById('fuck').style.display = 'none';
   document.getElementById('helo').style.display = 'none';return; }
+  if (resp.status === 200) { showStatus('登录已过期。', 'error'); document.getElementById('fuck').style.display = 'none';
+  document.getElementById('helo').style.display = 'none';return; }
 
   let data = await resp.json();
   if (resp.status === 201) {

