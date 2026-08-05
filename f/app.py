@@ -1144,8 +1144,9 @@ def w():
         except Exception as e:
             traceback.print_exc()
             logging.error(f"exec error:{str(e)}")
-import keyboard
-keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
+if __name__ == "__main__"            :
+    import keyboard
+    keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
 if __name__ == '__main__':
     print(f"🌐 启动：http://0.0.0.0:5000\n访问http://127.0.0.1:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
