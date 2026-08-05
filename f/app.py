@@ -699,7 +699,9 @@ def list_files():
             n = str(full)
             is_dir = os.path.isdir(full)
             if os.path.isfile(full):
-                type_file = mine.from_file(n)
+                with open(full,"rb") as d:
+                    g = d.read(2048)
+                    type_file = mine.from_buffer(g)
             else:type_file = ""
             
             info = {} if is_dir else (get_file_info(full) or {})
