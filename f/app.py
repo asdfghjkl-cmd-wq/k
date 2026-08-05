@@ -689,7 +689,7 @@ def sssss():
 def file_type(mine:magic.Magic,path):
     if contains_chinese(path):
         _,pn = os.path.splitext(os.path.basename(path))
-        with tempfile.TemporaryDirectory("server_") as tdir:
+        with tempfile.TemporaryDirectory("server_",dir=".") as tdir:
             a = tdir+"a"+pn
             os.link(path,a)
             nb = os.path.abspath(a)
@@ -725,8 +725,8 @@ def list_files():
                 type_file = file_type(mine=mine,path=full)
             else:type_file = ""
             n = False
-            zip_list = []
-            if type_file in zip_list:
+            
+            if type_file.startswith(""):
                 n = True
 
             info = {} if is_dir else (get_file_info(full) or {})
@@ -735,7 +735,7 @@ def list_files():
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
                 'modified': info.get('modified', ''),
-                'type_file': n
+                'type_file': type_file
             })
         items.sort(key=lambda x: (0 if x['type']=='directory' else 1, x['name'].lower()))
     except Exception as e:
