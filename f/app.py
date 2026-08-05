@@ -7,8 +7,9 @@
 4. 优化并发控制，避免进度计数异常（前端已建议修复，此处确保后端稳健）。
 5. 引入 CSRF 保护（Flask-WTF）。
 """
-import pickle
 
+import pickle
+from py7zr import SevenZipFile
 from markupsafe import escape
 import magic
 import zipfile, requests
@@ -51,7 +52,7 @@ def get_filename_from_url(url):
 task_store = {}          # { task_id: { 'status':..., 'error':..., 'tool_id':..., 'progress':{'total':0,'current':0}, 'cancel_event':Event() } }
 task_store_lock = Lock()
 
-MAX_WORKERS = 2
+MAX_WORKERS = 3
 task_queue = Queue()
 def save_user():
     global user_list,nigga_list,users,admin
@@ -190,6 +191,8 @@ def load_html():
     try:
         with open(HTML_FILE, "r", encoding="utf-8") as f:
             HTML_TEMPLATE = f.read()
+        if app.debug:
+            HTML_TEMPLATE += "<br/>\n<a href=\"/new\">new</a>"
     except Exception as e:
         print(f"[WARN] 无法加载模板 {HTML_FILE}: {e}")
         HTML_TEMPLATE = "<h1>模板加载失败，请联系管理员</h1>"
@@ -310,6 +313,51 @@ def get_meta_path(rel_path):
     else:
         meta_dir = meta_base
     return os.path.join(meta_dir, os.path.basename(rel_path) + '.json')
+
+def sze(file,od):
+    zp = safe_path(file)
+    if not os.path.isfile(zp):
+        raise FileNotFoundError(f"not found:{zp}")
+    basename = str(os.path.basename(zp))
+    a,b = os.path.splitext(basename)
+    if not  a:
+        a= "extracted"
+    target_base = os.path.join(od,a)
+    target_dir = target_base
+    counter = 1
+    while os.path.exists(target_dir):
+        target_dir = f"{target_base} ({counter})"
+        counter += 1
+        if counter > 1000:
+            ts = int(time.time() * 1000) % 1000000
+            target_dir = f"{target_base}_{ts}"
+            break
+    target_dir = os.path.realpath(target_dir)
+    # 最终检查确保解压目录仍位于 UPLOAD_DIR 下
+    if not target_dir.startswith(os.path.realpath(UPLOAD_DIR) + os.sep) and target_dir != os.path.realpath(UPLOAD_DIR):
+        raise ValueError("解压目标路径越权")
+    os.makedirs(target_dir, exist_ok=True)
+    try:
+        with SevenZipFile(zp,mode="r") as df:
+            for member in df.list():
+                    
+                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+            df.extractall(target_dir)
+            app.logger.info(f"解压完成: {file} -> {target_dir}")
+        return
+    except Exception as e:
+        app.logger.error(f"解压失败: {e}")
+        if os.path.exists(target_dir) and not os.listdir(target_dir):
+            os.rmdir(target_dir)
+        return
+
+
+
+
+
+
 
 def zipe(file: str, dir):
     """解压 ZIP 文件，并防止 Zip Slip 攻击"""
@@ -565,7 +613,45 @@ def copy():
         return "复制失败", 500
 
     
+@app.route('/zipex',methods=['POST'])
+@login_required
+@isadmin
+def zip_ex():
+    a = dict(request.json)
 
+    try:
+        f = a['path']
+        user_dir = a.get('outpath', '')
+                
+        sp = safe_path(user_dir) if user_dir else UPLOAD_DIR
+    except Exception:
+        abort(404)
+    f = os.path.join(UPLOAD_DIR,f)
+    print(f,flush=True)
+    f =safe_path(f)
+    print(f,flush=True)
+    if not os.path.exists(f):
+        return "not found",400
+    
+
+    n = file_type(magic.Magic(mime=True),f)
+    try:
+        if n == "application/zip":
+            zipe(f,sp)
+        elif n == 'application/x-7z-compressed':
+            sze(f,sp)
+
+        else:
+            n = jsonify({'success':False})
+            n.status_code = 501
+            return n
+        return jsonify({"success":True})
+    except Exception as e:
+        traceback.print_exc()
+        logging.error(str(e))
+        n =jsonify({'success':False,"error":None})
+        n.status_code = 400
+        return n
     
 
 @app.route("/toolcall", methods=['POST'])
@@ -689,8 +775,9 @@ def sssss():
 def file_type(mine:magic.Magic,path):
     if contains_chinese(path):
         _,pn = os.path.splitext(os.path.basename(path))
-        with tempfile.TemporaryDirectory("server_",dir=".") as tdir:
-            a = tdir+"a"+pn
+        with tempfile.TemporaryDirectory("server",dir=BASE_DIR) as tdir:
+
+            a = os.path.join(tdir,"a"+pn)
             os.link(path,a)
             nb = os.path.abspath(a)
             n = mine.from_file(nb)
@@ -705,7 +792,7 @@ def file_type(mine:magic.Magic,path):
 @app.route('/api/files')
 @login_required
 def list_files():
-    
+    sn =os.path.relpath(os.path.abspath(os.path.dirname(__file__)),os.path.abspath("."))
     rel_path = request.args.get('path', '').strip()
     try:
         target_dir = safe_path(rel_path) if rel_path else UPLOAD_DIR
@@ -714,7 +801,7 @@ def list_files():
     if not os.path.isdir(target_dir):
         return jsonify({'success': False, 'error': '路径不存在'}), 404
     items = []
-    mine = magic.Magic(mime=True,magic_file=os.path.join(BASE_DIR,'magic.mgc'))
+    mine = magic.Magic(mime=True)
     try:
         for name in os.listdir(target_dir):
             if name.startswith('.') or name == 'metadata' or name == 'chunks': continue
@@ -725,8 +812,8 @@ def list_files():
                 type_file = file_type(mine=mine,path=full)
             else:type_file = ""
             n = False
-            
-            if type_file.startswith(""):
+            a = ['application/x-7z-compressed','application/x-bzip2','application/x-gzip','application/x-xz','application/x-rar','application/x-tar','application/zip','application/x-rar-compressed','application/vnd.rar']
+            if type_file in a:
                 n = True
 
             info = {} if is_dir else (get_file_info(full) or {})
@@ -735,13 +822,14 @@ def list_files():
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
                 'modified': info.get('modified', ''),
-                'type_file': type_file
+                'type_file': type_file,
+                'type_zip':n
             })
         items.sort(key=lambda x: (0 if x['type']=='directory' else 1, x['name'].lower()))
     except Exception as e:
         logging.error(str(e))
         return jsonify({'success': False, 'error': "see log"}), 500
-    print(items,flush=True)
+
     return jsonify({'success': True, 'data': items})
 
 @app.route('/api/folders', methods=['POST'])
@@ -955,11 +1043,13 @@ def w():
                 ddd = a.lower().replace("debug","").strip()
                 if ddd == "open":
                     create_file(os.path.join(BASE_DIR,"de.lock"))
-                    restart_service()
+                    app.debug = True
+
                 elif ddd == "close":
                     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
                         os.remove(os.path.join(BASE_DIR,"de.lock"))
-                    restart_service()
+                    app.debug = False
+
             elif a.lower() == "restart":
                 restart_service()
             elif a.lower().startswith("adduser"):
@@ -1057,9 +1147,10 @@ def w():
 import keyboard
 keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
 if __name__ == '__main__':
-    print(f"🌐 启动：http://0.0.0.0:5000", flush=True)
+    print(f"🌐 启动：http://0.0.0.0:5000\n访问http://127.0.0.1:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
         app.debug = True
+        HTML_TEMPLATE += "<br/>\n<a href=\"/new\">new</a>"
     s = Thread(target=w, daemon=True)
     s.start()
-    app.run("0.0.0.0", 5000, use_reloader=False)
+    app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)

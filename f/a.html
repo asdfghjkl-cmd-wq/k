@@ -116,18 +116,18 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
 <div  class="modal" id="file2">
   <div class="modal-content">
     <h3>操作文件/文件夹</h3>
-    <select id="file_action">
+    <select id="file_action2">
       <option value=1>移动</option>
-      <option value=2>解压</option>
+      <option value=4>解压</option>
       <option value=3>复制</option>
     </select>
   <br>
-    目标路径: <input type="text" id="file_path" placeholder="目标路径">
+    目标路径: <input type="text" id="file_path_2" placeholder="目标路径">
     <br>
 
     <div class="modal-actions">
       <button class="btn" onclick="upok = 2">取消</button>
-      <button class="btn btn-success" onclick="ca()">操作</button>
+      <button class="btn btn-success" onclick="ca2()">操作</button>
     </div>
   </div>
 </div>
@@ -448,7 +448,20 @@ function renderFileList(items) {
                 <button class="btn btn-small" onclick="file_call('${itemPath.replace(/'/g, "\\'")}', 'dir')">操作</button>
                 <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'dir')">删除</button>
               </div>`;
-    } else {
+    } else if (item.type === 'file' && item.type_zip) {
+      const size = item.size ? (item.size/1024/1024).toFixed(2) + ' MB' : '未知';
+      html += `<div class="file-item">
+                <div class="file-icon">📦</div>
+                <div class="file-info">
+                  <div class="file-name">${item.name}</div>
+                  <div class="file-meta">${size} | ${item.modified || ''}</div>
+                </div>
+                <button class="btn btn-outline btn-small" onclick="share('${itemPath.replace(/'/g, "\\'")}')">生成分享链接</button>
+                <button class="btn btn-small" onclick="file2_call('${itemPath.replace(/'/g, "\\'")}', 'dir')">操作</button>
+                <a href="/download/${encodeURIComponent(itemPath)}" class="btn btn-outline btn-small">下载</a>
+                <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'file')">删除</button>
+              </div>`;
+    }else {
       const size = item.size ? (item.size/1024/1024).toFixed(2) + ' MB' : '未知';
       html += `<div class="file-item">
                 <div class="file-icon">📄</div>
@@ -683,12 +696,30 @@ async function file_call(p) {
   
 }
 
+async function file2_call(p) {
+  upok = 0;
+  document.getElementById('file2').style.display = 'flex';
+  filess(p);
+  
+}
+async function ca2() {
+  const a = document.getElementById("file_action2").value;
+  if (a === "1") {
+    upok = 1
+  }
+  else if (a === "4") {
+    upok = 4
+  }
+  else if (a === "3"){
+    upok = 3
+  }
+}
 async function ca() {
   const a = document.getElementById("file_action").value;
   if (a === "1") {
     upok = 1
   }
-  else if (a === "2") {
+  else if (a === "4") {
     upok = 4
   }
   else if (a === "3"){
@@ -711,9 +742,35 @@ async function filess(path) {
     document.getElementById('file').style.display = 'none';
     document.getElementById('file2').style.display = 'none';
   } else if (upok === 4){
+    zipjy(path)
     document.getElementById('file').style.display = 'none';
     document.getElementById('file2').style.display = 'none';
   }
+}
+
+async function zipjy(path) {
+  var targetPath = document.getElementById('file_path').value.trim();
+  if (!targetPath) {targetPath = currentPath}
+  s = await csrfFetch('/zipex',{
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        'path': path,
+        'outpath': targetPath
+      })})
+  if (s.status === 500) {showStatus("服务器错误","error");return}
+  if (s.status === 501) {showStatus("未支持","error");return}
+  if (s.status === 400) {showStatus("参数错误",'error');return}
+  try {
+      const data = await s.json();
+      success = data.success !== false;
+    } catch(e) {
+      // 如果响应体不是 JSON，则视为成功（状态码 200）
+      success = s.status === 200;
+    }
+    if (success){showStatus('已解压',"success");refresh()}
+    else {showStatus('解压失败',"error")}
+    refresh()
 }
 
 // 修复 fileItem：匹配后端 /file 接口要求 {source, target, args}
