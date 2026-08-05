@@ -29,12 +29,19 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 ascii_lowercase += "0123456789"
 import tool.u2
-
+import tempfile
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
 # 禁用不安全的请求警告（针对 verify=False）
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def contains_chinese(text):
+   for ch in text:
+       if u'\u4e00' <= ch <= u'\u9fff':
+           return True
+   return False
+
 
 def get_filename_from_url(url):
     parsed_url = urlparse(url)
@@ -62,8 +69,8 @@ def save_user():
         print("save over",flush=True)
 
 def load_user():
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
-    ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', os.environ.get('a', name))
+    ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', os.environ.get('p', password)))
     users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
     users["admina"] = generate_password_hash("aadmin123")
     nigga_list = ["admina"]
@@ -679,10 +686,26 @@ def sssss():
     else:
         return redirect("/")
 
-@app.route('/api/files')
+def file_type(mine:magic.Magic,path):
+    if contains_chinese(path):
+        _,pn = os.path.splitext(os.path.basename(path))
+        with tempfile.TemporaryDirectory("server_") as tdir:
+            a = tdir+"a"+pn
+            os.link(path,a)
+            nb = os.path.abspath(a)
+            n = mine.from_file(nb)
+    else:n = mine.from_file(path)
+    return n
 
+
+
+
+
+
+@app.route('/api/files')
 @login_required
 def list_files():
+    
     rel_path = request.args.get('path', '').strip()
     try:
         target_dir = safe_path(rel_path) if rel_path else UPLOAD_DIR
@@ -691,7 +714,7 @@ def list_files():
     if not os.path.isdir(target_dir):
         return jsonify({'success': False, 'error': '路径不存在'}), 404
     items = []
-    mine = magic.Magic(mime=True)
+    mine = magic.Magic(mime=True,magic_file=os.path.join(BASE_DIR,'magic.mgc'))
     try:
         for name in os.listdir(target_dir):
             if name.startswith('.') or name == 'metadata' or name == 'chunks': continue
@@ -699,18 +722,20 @@ def list_files():
             n = str(full)
             is_dir = os.path.isdir(full)
             if os.path.isfile(full):
-                with open(full,"rb") as d:
-                    g = d.read(2048)
-                    type_file = mine.from_buffer(g)
+                type_file = file_type(mine=mine,path=full)
             else:type_file = ""
-            
+            n = False
+            zip_list = []
+            if type_file in zip_list:
+                n = True
+
             info = {} if is_dir else (get_file_info(full) or {})
             items.append({
                 'name': escape(name),
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
                 'modified': info.get('modified', ''),
-                'type_file': type_file
+                'type_file': n
             })
         items.sort(key=lambda x: (0 if x['type']=='directory' else 1, x['name'].lower()))
     except Exception as e:
