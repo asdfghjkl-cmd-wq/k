@@ -165,8 +165,6 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
         tools<select id="tools_select">
           <option value="1">Assembly</option>
           <option value="2">Cut</option>
-          
-          <option value="5">zip extract</option>
           <option value="3">help</option>
         </select>
         <br>
@@ -189,16 +187,17 @@ let uploading = false;
 let activeUploads = 0;
 const MAX_CONCURRENT = 3;
 let tid;
-// ========== CSRF Token 辅助函数 ==========
-function getCsrfToken() {
+  function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
+  }
 
-function csrfFetch(url, options = {}) {
+  function csrfFetch(url, options = {}) {
     if (!options.headers) options.headers = {};
     options.headers['X-CSRFToken'] = getCsrfToken();
+    options.credentials = 'same-origin';   // ← 关键修复：携带 Cookie
     return fetch(url, options);
-}
+  }
+
 
 // ========== 初始化事件绑定 ==========
 document.addEventListener('DOMContentLoaded', function() {
@@ -699,7 +698,7 @@ async function file_call(p) {
 async function file2_call(p) {
   upok = 0;
   document.getElementById('file2').style.display = 'flex';
-  filess(p);
+  filess2(p);
   
 }
 async function ca2() {
@@ -726,8 +725,29 @@ async function ca() {
     upok = 3
   }
 }
+async function filess2(path) {
+  if (upok === 0) {
+    setTimeout(() => filess2(path), 500);   // 修复：使用箭头函数
+  } else if (upok === 1) {
+    moveItem2(path);
+    document.getElementById('file').style.display = 'none';
+    document.getElementById('file2').style.display = 'none';
+  } else if (upok === 2) {
+    document.getElementById('file').style.display = 'none';
+    document.getElementById('file2').style.display = 'none';
+  } else if (upok === 3) {
+    copyItem2(path);
+    document.getElementById('file').style.display = 'none';
+    document.getElementById('file2').style.display = 'none';
+  } else if (upok === 4){
+    zipjy(path)
+    document.getElementById('file').style.display = 'none';
+    document.getElementById('file2').style.display = 'none';
+  }
+}
 // 修复 file 函数：setTimeout 改为箭头函数，防止立即调用
 async function filess(path) {
+
   if (upok === 0) {
     setTimeout(() => filess(path), 500);   // 修复：使用箭头函数
   } else if (upok === 1) {
@@ -741,11 +761,7 @@ async function filess(path) {
     copyItem(path);
     document.getElementById('file').style.display = 'none';
     document.getElementById('file2').style.display = 'none';
-  } else if (upok === 4){
-    zipjy(path)
-    document.getElementById('file').style.display = 'none';
-    document.getElementById('file2').style.display = 'none';
-  }
+  } 
 }
 
 async function zipjy(path) {
@@ -764,11 +780,36 @@ async function zipjy(path) {
   try {
       const data = await s.json();
       success = data.success !== false;
+      var taskId = data.task_id;
     } catch(e) {
       // 如果响应体不是 JSON，则视为成功（状态码 200）
       success = s.status === 200;
     }
-    if (success){showStatus('已解压',"success");refresh()}
+    if (success){showStatus('解压中',"success");
+    refresh();
+    
+
+    const poll = async () => {
+        let statusResp = await csrfFetch(`/api/task/${taskId}`);
+        if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
+        let statusData = await statusResp.json();
+
+
+
+        if (statusData.status === 'finished') {
+          showStatus("解压完成！", "success");
+          removeProgress(taskId);
+          refresh();
+        } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+          const msg = statusData.status === 'cancelled' ? '已取消' : (statusData.error || '操作失败');
+          showStatus(msg, 'error');
+          removeProgress(taskId);
+        } else {
+          setTimeout(poll, 1000);
+        }
+      };
+      poll()
+    }
     else {showStatus('解压失败',"error")}
     refresh()
 }
@@ -790,15 +831,37 @@ async function moveItem(Path) {
     if (resp.status === 401) { showStatus('登录已过期','error'); return; }
     // 后端可能未返回 JSON（成功时无响应体），这里做兼容处理
     let success = true;
+    var tool = 6
     try {
       const data = await resp.json();
       success = data.success !== false;
+      var taskId = data.task_id
     } catch(e) {
       // 如果响应体不是 JSON，则视为成功（状态码 200）
       success = resp.status === 200;
     }
     if (success) {
-      showStatus('移动成功','success');
+      showStatus('复制中','success');
+       const poll = async () => {
+    let statusResp = await csrfFetch(`/api/task/${taskId}`);
+    if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
+    let statusData = await statusResp.json();
+
+    
+
+    if (statusData.status === 'finished') {
+      showStatus("移动完成！", "success");
+      removeProgress(taskId);
+      refresh();
+    } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+      const msg = statusData.status === 'cancelled' ? '已取消' : (statusData.error || '操作失败');
+      showStatus(msg, 'error');
+      removeProgress(taskId);
+    } else {
+      setTimeout(poll, 1000);
+    }
+  };
+      poll()
       document.getElementById('file').style.display = 'none';
       refresh();
     } else {
@@ -808,9 +871,115 @@ async function moveItem(Path) {
 }
 
 
+async function moveItem2(Path) {
+  const targetPath = document.getElementById('file_path_2').value.trim();
 
+  if (!targetPath) { alert('请输入目标路径'); return; }
+  try {
+    const resp = await csrfFetch('/move', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        source: Path,
+        target: targetPath
+      })
+    });
+    if (resp.status === 401) { showStatus('登录已过期','error'); return; }
+    // 后端可能未返回 JSON（成功时无响应体），这里做兼容处理
+    let success = true;
+    var tool = 6
+    try {
+      const data = await resp.json();
+      success = data.success !== false;
+      var taskId = data.task_id
+    } catch(e) {
+      // 如果响应体不是 JSON，则视为成功（状态码 200）
+      success = resp.status === 200;
+    }
+    if (success) {
+      showStatus('移动中','success');
+       const poll = async () => {
+    let statusResp = await csrfFetch(`/api/task/${taskId}`);
+    if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
+    let statusData = await statusResp.json();
 
+    
 
+    if (statusData.status === 'finished') {
+      showStatus("复制完成！", "success");
+      removeProgress(taskId);
+      refresh();
+    } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+      const msg = statusData.status === 'cancelled' ? '已取消' : (statusData.error || '操作失败');
+      showStatus(msg, 'error');
+      removeProgress(taskId);
+    } else {
+      setTimeout(poll, 1000);
+    }
+  };
+      poll()
+      document.getElementById('file').style.display = 'none';
+      refresh();
+    } else {
+      showStatus('复制失败','error');
+    }
+  } catch (e) { showStatus('网络错误','error'); }
+}
+
+async function copyItem2(Path) {
+  const targetPath = document.getElementById('file_path_2').value.trim();
+
+  if (!targetPath) { alert('请输入目标路径'); return; }
+  try {
+    const resp = await csrfFetch('/copy', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        source: Path,
+        target: targetPath
+      })
+    });
+    if (resp.status === 401) { showStatus('登录已过期','error'); return; }
+    // 后端可能未返回 JSON（成功时无响应体），这里做兼容处理
+    let success = true;
+    var tool = 6
+    try {
+      const data = await resp.json();
+      success = data.success !== false;
+      var taskId = data.task_id
+    } catch(e) {
+      // 如果响应体不是 JSON，则视为成功（状态码 200）
+      success = resp.status === 200;
+    }
+    if (success) {
+      showStatus('复制中','success');
+       const poll = async () => {
+    let statusResp = await csrfFetch(`/api/task/${taskId}`);
+    if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
+    let statusData = await statusResp.json();
+
+    
+
+    if (statusData.status === 'finished') {
+      showStatus("复制完成！", "success");
+      removeProgress(taskId);
+      refresh();
+    } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+      const msg = statusData.status === 'cancelled' ? '已取消' : (statusData.error || '操作失败');
+      showStatus(msg, 'error');
+      removeProgress(taskId);
+    } else {
+      setTimeout(poll, 1000);
+    }
+  };
+      poll()
+      document.getElementById('file').style.display = 'none';
+      refresh();
+    } else {
+      showStatus('复制失败','error');
+    }
+  } catch (e) { showStatus('网络错误','error'); }
+}
 
 
 
@@ -831,15 +1000,37 @@ async function copyItem(Path) {
     if (resp.status === 401) { showStatus('登录已过期','error'); return; }
     // 后端可能未返回 JSON（成功时无响应体），这里做兼容处理
     let success = true;
+    var tool = 6
     try {
       const data = await resp.json();
       success = data.success !== false;
+      var taskId = data.task_id
     } catch(e) {
       // 如果响应体不是 JSON，则视为成功（状态码 200）
       success = resp.status === 200;
     }
     if (success) {
-      showStatus('复制成功','success');
+      showStatus('复制中','success');
+       const poll = async () => {
+    let statusResp = await csrfFetch(`/api/task/${taskId}`);
+    if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
+    let statusData = await statusResp.json();
+
+    
+
+    if (statusData.status === 'finished') {
+      showStatus("复制完成！", "success");
+      removeProgress(taskId);
+      refresh();
+    } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+      const msg = statusData.status === 'cancelled' ? '已取消' : (statusData.error || '操作失败');
+      showStatus(msg, 'error');
+      removeProgress(taskId);
+    } else {
+      setTimeout(poll, 1000);
+    }
+  };
+      poll()
       document.getElementById('file').style.display = 'none';
       refresh();
     } else {

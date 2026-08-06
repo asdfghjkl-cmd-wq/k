@@ -7,18 +7,18 @@
 4. 优化并发控制，避免进度计数异常（前端已建议修复，此处确保后端稳健）。
 5. 引入 CSRF 保护（Flask-WTF）。
 """
-
+true=True
 import pickle
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
 import magic
-import zipfile, requests
+import zipfile, requests,pyzipper
 from threading import Thread, Lock, Event
 from queue import Queue
 from urllib.parse import urlparse
 import logging
-import tool.u1
+
 from string import ascii_lowercase, ascii_letters
 from flask import (Flask, request, jsonify, render_template_string,
                    make_response, send_from_directory, session, redirect, url_for, abort)
@@ -30,13 +30,15 @@ from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 ascii_lowercase += "0123456789"
-import tool.u2
 import tempfile
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
 # 禁用不安全的请求警告（针对 verify=False）
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+class qe(BaseException):
+    pass
 
 def contains_chinese(text):
    for ch in text:
@@ -48,6 +50,56 @@ def contains_chinese(text):
 def get_filename_from_url(url):
     parsed_url = urlparse(url)
     return parsed_url.path.split('/')[-1]
+
+class tool:
+    class u1:
+        def call(source_path,chunk_size,output_dir,task_id,cancel_event:Event):
+            if os.path.exists(output_dir):
+                if os.path.isdir(output_dir):
+                        shutil.rmtree(output_dir)
+                else:
+                    os.remove(output_dir)  # 如果是同名文件则删除
+            os.makedirs(output_dir)
+
+            file_count = 0
+            with open(source_path, "rb") as src:
+                while True:
+                    if cancel_event.is_set():
+                        shutil.rmtree(output_dir)
+                        raise qe("cancel")
+                    data = src.read(chunk_size)
+                    if not data:
+                        break
+                    file_count += 1
+                    print(file_count)
+                    # 4位编号便于排序
+                    out_name = os.path.join(output_dir, f"{file_count:04d}.data")
+                    with  open(out_name, "wb") as chunk:
+                        chunk.write(data)
+
+    # 写入元信息
+            meta_path = os.path.join(output_dir, "file")
+            with open(meta_path, "w", encoding="utf-8") as meta:
+                meta.write(f"{os.path.basename(source_path)}\n")
+                meta.write(f"{file_count}\n")
+                meta.write(f"{chunk_size}\n")
+
+
+    class u2:
+        def call(dir,tdir,task_id,cancel_event:Event):
+            file = open(os.path.join(dir,"file"),"r",encoding="utf-8")
+            n = os.path.basename(file.readline().replace("\n",""))
+ 
+            x = int(file.readline().replace("\n",""))
+            file.close()
+            bn = open(os.path.join(tdir,n),"wb")
+            for nb in range(1,x+1):
+                if cancel_event.is_set():
+                    os.remove(bn.name)
+                    raise qe("cancel")
+                an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb")
+                bn.write(an.read())
+                an.close()
 
 # ==================== 异步任务系统 ====================
 task_store = {}          # { task_id: { 'status':..., 'error':..., 'tool_id':..., 'progress':{'total':0,'current':0}, 'cancel_event':Event() } }
@@ -90,7 +142,7 @@ def load_user():
         return users,user_list,nigga_list,admin
     except:
         return users,user_list,nigga_list,admin
-
+tool_list = [6,50,51,1,2,4]
 def worker():
     while True:
         task_id, func, base_args, tool_id = task_queue.get()
@@ -100,13 +152,22 @@ def worker():
         with task_store_lock:
             task_store[task_id]['status'] = 'running'
         try:
+            a = True
             with app.app_context():
-                if tool_id == 6:   # 下载任务
-                    func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
+                if tool_id in tool_list:  
+                    with task_store_lock:
+                        task_store[task_id]['can_cancel'] = True
+                    a = False
+                    a = func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
                 else:
+                    task_store[task_id]['can_cancel'] = False
                     func(*base_args)
             with task_store_lock:
-                task_store[task_id]['status'] = 'finished'
+                if a:
+                    task_store[task_id]['status'] = 'finished'
+                else:
+                    task_store[task_id]['status'] = 'failed'
+
         except Exception as e:
             traceback.print_exc()
             with task_store_lock:
@@ -115,6 +176,10 @@ def worker():
                 else:
                     task_store[task_id]['status'] = 'failed'
                     task_store[task_id]['error'] = str(e)
+        except qe:
+            with task_store_lock:
+                if task_store[task_id]['cancel_event'].is_set():
+                    task_store[task_id]['status'] = 'cancelled'
         finally:
             task_queue.task_done()
 
@@ -249,8 +314,8 @@ def isadmin(f):
     return wrap
 
 def safe_path(*parts):
-    target = os.path.realpath(os.path.join(UPLOAD_DIR, *parts))
-    if not target.startswith(os.path.realpath(UPLOAD_DIR) + os.sep):
+    target = os.path.abspath(os.path.join(UPLOAD_DIR, *parts))
+    if not target.startswith(os.path.abspath(UPLOAD_DIR) + os.sep):
         raise ValueError("路径越权")
     return target
 
@@ -316,7 +381,7 @@ def get_meta_path(rel_path):
         meta_dir = meta_base
     return os.path.join(meta_dir, os.path.basename(rel_path) + '.json')
 
-def sze(file,od):
+def sze(file,od,password):
     zp = safe_path(file)
     if not os.path.isfile(zp):
         raise FileNotFoundError(f"not found:{zp}")
@@ -340,28 +405,29 @@ def sze(file,od):
         raise ValueError("解压目标路径越权")
     os.makedirs(target_dir, exist_ok=True)
     try:
-        with SevenZipFile(zp,mode="r") as df:
-            for member in df.list():
-                    
-                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
-                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
-                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-            df.extractall(target_dir)
-            app.logger.info(f"解压完成: {file} -> {target_dir}")
-        return
+        a = pro(target=sece,args=(zp,target_dir,file,password),daemon=True)
+        return True,a,target_dir
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
         if os.path.exists(target_dir) and not os.listdir(target_dir):
             os.rmdir(target_dir)
-        return
+        return False,None,target_dir
+
+def sece(zp,target_dir,file,password):
+    with SevenZipFile(zp,mode="r",password=password) as df:
+        for member in df.list():
+    
+            member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+            if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+        df.extractall(target_dir)
+        app.logger.info(f"解压完成: {file} -> {target_dir}")
 
 
 
 
 
-
-
-def zipe(file: str, dir):
+def zipe(file: str, dir,password):
     """解压 ZIP 文件，并防止 Zip Slip 攻击"""
     zip_path = safe_path(file)
     if not os.path.isfile(zip_path):
@@ -390,18 +456,29 @@ def zipe(file: str, dir):
         raise ValueError("解压目标路径越权")
     os.makedirs(target_dir, exist_ok=True)
     try:
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            for member in zf.infolist():
-                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
-                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
-                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-            zf.extractall(target_dir)
-        app.logger.info(f"解压完成: {file} -> {target_dir}")
+        
+        a =pro(target=zce,args=(zip_path,target_dir,file,password),daemon=True)
+        return True,a,target_dir
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
         if os.path.exists(target_dir) and not os.listdir(target_dir):
             os.rmdir(target_dir)
-        raise
+        return False,None,target_dir
+
+def zce(zip_path,target_dir,file,password):
+    if password == "":
+        a = zipfile.ZipFile
+    else:
+        a = pyzipper.AESZipFile
+
+    with a(zip_path, 'r') as zf:
+        zf.setpassword(password)
+        for member in zf.infolist():
+            member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+            if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+        zf.extractall(target_dir)
+    app.logger.info(f"解压完成: {file} -> {target_dir}")
 
 
 def download(url,dir, task_id, cancel_event):
@@ -516,9 +593,21 @@ def get_download_list():
 @login_required
 @isadmin
 def get_task_list():
-    
+    a = {}
+    with task_store_lock:
+        for task_id, task in task_store.items():
+            a[task_id] = {
+                'status': task.get('status', 'unknown'),
+                'error': task.get('error', ''),
+                'tool_id': task.get('tool_id', ''),
+                'progress': task.get('progress', {}),
+                'file_info':task.get('file_info',{}),
+                'path': task.get('path', '')
+            }
+    return jsonify(a)
+
         
-    return task_store,200
+    
             
 
 @app.route('/')
@@ -543,7 +632,7 @@ def get_task_status(task_id):
         'progress': task.get('progress', {})
     })
 
-@app.route('/api/task/<task_id>/cancel', methods=['POST'])
+@app.route('/api/task/<task_id>/cancel', methods=['POST','GET'])
 @isadmin
 @login_required
 def cancel_task(task_id):
@@ -559,20 +648,40 @@ def cancel_task(task_id):
 @app.route("/move", methods=['POST'])
 @isadmin
 @login_required
-def move():
+def call_move():
     try:
         data = request.get_json()
         if not data:
             abort(400)
         source = data["source"]
         target = data["target"]
-
+    
     except (KeyError, TypeError):
         abort(400)
+    func = move_file
+    cen = Event()
+    task_id = str(uuid.uuid4())
+    tool_id = 51
+    with task_store_lock:
+        task_store[task_id] = {
+            'status': 'pending',
+            'error': '',
+            'tool_id': tool_id,
+            'progress': {'total': 0, 'current': 0},
+            'cancel_event': cen,
+            'file_info':{'src':source,'dst':resolve_target_path(safe_path(source), target)},
+            'path': os.path.dirname(os.path.abspath(source))
+        }
+    arg_list = (source,target)
+    task_queue.put((task_id, func, arg_list, tool_id))
+    return jsonify({'success':True,'task_id':task_id})
+
+def move_file(source,target,task_id,cancel_event:Event):
+    
 
     try:
         src = safe_path(source)
-        dst = safe_path(target)
+        dst = resolve_target_path(src, target)
     except ValueError:
         return "错误: 目录越权", 400
 
@@ -582,16 +691,22 @@ def move():
     try:
         if os.path.isfile(src):
             # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
-            shutil.move(src, dst)
+            a = pro(target=shutil.move,args=(src,dst),daemon=True)
         elif os.path.isdir(src):
-            
-            shutil.move(src, dst)
+            a = pro(target=shutil.move,args=(src,dst),daemon=True)
+                
         else:
             return "源路径类型未知", 400
-        return "移动成功", 200
+        a.start()
+        while a.is_alive():
+            if cancel_event.is_set():
+                a.kill()
+                raise qe("移动被取消")
+        return True
     except Exception as e:
         logging.error(f"移动失败: {e}")
-        return "移动失败", 500
+        return False
+
         
 @app.route("/copy", methods=['POST'])
 @isadmin
@@ -606,8 +721,8 @@ def call_copy():
     
     except (KeyError, TypeError):
         abort(400)
-    func = copy
-    arg_list = (source,target)
+    func = copy_file
+    cen = Event()
     task_id = str(uuid.uuid4())
     tool_id = 50
     with task_store_lock:
@@ -616,20 +731,23 @@ def call_copy():
             'error': '',
             'tool_id': tool_id,
             'progress': {'total': 0, 'current': 0},
-            'cancel_event': Event(),
+            'cancel_event': cen,
+            'file_info':{'src':source,'dst':target},
             'path': os.path.dirname(os.path.abspath(source))
         }
+    arg_list = (source,target)
     task_queue.put((task_id, func, arg_list, tool_id))
+    return jsonify({'success':True,'task_id':task_id})
 
 
 
 
-def copy(source,target,cen:Event):
+def copy_file(source,target,task_id,cancel_event:Event):
     
 
     try:
         src = safe_path(source)
-        dst = safe_path(target)
+        dst = resolve_target_path(src, target)
     except ValueError:
         return "错误: 目录越权", 400
 
@@ -641,61 +759,115 @@ def copy(source,target,cen:Event):
             # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
             a = pro(target=shutil.copy,args=(src,dst),daemon=True)
         elif os.path.isdir(src):
-            a = pro(target=shutil.copytree,args=(src,dst),daemon=True)
+            if os.path.exists(dst):a = pro(target=shutil.copytree,args=(src,os.path.join(dst,os.path.basename(src))),daemon=True)
+
+            else:a = pro(target=shutil.copytree,args=(src,dst),daemon=True)
                 
         else:
             return "源路径类型未知", 400
         a.start()
         while a.is_alive():
-            if cen.is_set():
-                a.terminate()
-                raise Exception("下载被取消")
-        return "复制成功",200
+            if cancel_event.is_set():
+                a.kill()
+                raise qe("复制被取消")
+        return True
     except Exception as e:
         logging.error(f"复制失败: {e}")
-        return "复制失败", 500
+        return False
 
     
 @app.route('/zipex',methods=['POST'])
 @login_required
 @isadmin
-def zip_ex():
+def call_ze():
     a = dict(request.json)
-
+    
     try:
         f = a['path']
         user_dir = a.get('outpath', '')
-                
-        sp = safe_path(user_dir) if user_dir else UPLOAD_DIR
-    except Exception:
-        abort(404)
+        if user_dir == "":
+            user_dir = os.path.dirname(safe_path(f))
+        password = a.get('password','')
+    
+        sp = resolve_target_path(f,user_dir)
+    except Exception as e:
+        logging.error(str(e))
+        abort(400)
+    func = zip_ex
+    cen = Event()
+    task_id = str(uuid.uuid4())
+    tool_id = 4
+    with task_store_lock:
+        task_store[task_id] = {
+                'status': 'pending',
+                'error': '',
+                'tool_id': tool_id,
+                'progress': {'total': 0, 'current': 0},
+                'cancel_event': cen,
+                'file_info':{'src':f,'dst':sp},
+                'path': os.path.dirname(os.path.abspath(f))
+            }
+    arg_list = (f,sp,password)
+    task_queue.put((task_id, func, arg_list, tool_id))
+    return jsonify({'success':True,'task_id':task_id})
+    
+
+def zip_ex(f,sp,password,task_id,cancel_event:Event):
+   
     f = os.path.join(UPLOAD_DIR,f)
     print(f,flush=True)
     f =safe_path(f)
     print(f,flush=True)
     if not os.path.exists(f):
-        return "not found",400
+        
+        return False
     
 
     n = file_type(magic.Magic(mime=True),f)
     try:
         if n == "application/zip":
-            zipe(f,sp)
+            a,b,target_dir = zipe(f,sp,password)
         elif n == 'application/x-7z-compressed':
-            sze(f,sp)
+            a,b,target_dir = sze(f,sp,password)
 
         else:
-            n = jsonify({'success':False})
-            n.status_code = 501
-            return n
-        return jsonify({"success":True})
+            return False
+        if not a:
+            return False
+        b.start()
+        b:pro = b
+        while b.is_alive():
+            if cancel_event.is_set():
+                if os.path.exists(target_dir) and not os.listdir(target_dir):
+                    os.rmdir(target_dir)
+                raise qe('canceled')
+        return True
     except Exception as e:
         traceback.print_exc()
         logging.error(str(e))
-        n =jsonify({'success':False,"error":None})
-        n.status_code = 400
-        return n
+        return False
+
+
+def resolve_target_path(src_abs: str, target: str) -> str:
+    """
+    将目标路径 target 解析为绝对路径。
+    如果 target 是相对路径，则相对于 src_abs 的目录解析；
+    如果 target 是绝对路径，则直接使用（但会检查是否在 UPLOAD_DIR 内）。
+    """
+    if not target:
+        raise ValueError("目标路径不能为空")
+    src_dir = os.path.dirname(src_abs)
+    if os.path.isabs(target):
+        target_abs = os.path.abspath(target)
+    else:
+        target_abs = os.path.abspath(os.path.join(src_dir, target))
     
+    upload_abs = os.path.abspath(UPLOAD_DIR)
+    # 确保目标路径在 UPLOAD_DIR 内部（或等于 UPLOAD_DIR 本身）
+    if not target_abs.startswith(upload_abs + os.sep) and target_abs != upload_abs:
+        print(target_abs,flush=True)
+        raise ValueError("目标路径越权")
+    return target_abs
 
 @app.route("/toolcall", methods=['POST'])
 @isadmin
@@ -741,12 +913,7 @@ def call_tool():
                         os.path.join(safe_dir,os.path.basename(fp_clean)+"_cut"))
         elif tool_id == 3:
             return jsonify({'success': True, 'message': '使用Assembly以合成文件\n使用cut以分割文件,用法 -c 分割块大小 -f 文件(从根目录起)'}), 201
-        elif tool_id == 4:
-            func = time.sleep
-            arg_list = (10,)
-        elif tool_id == 5:
-            func = zipe
-            arg_list = (clean,safe_dir)
+        
         elif tool_id == 6:
             func = download
             arg_list = (clean,safe_dir)  
@@ -1075,6 +1242,8 @@ def w():
         logging.info(f"exec:{a.split(" ")[0:2]}")
         try:
             if a == "exit" or a == "\\" or a == "q":
+                for a in task_store.keys():
+                    task_store[a].get("cancel_event","").set()
                 os._exit(0)
             elif a.lower().startswith("ls"):
                 sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","").strip()))
