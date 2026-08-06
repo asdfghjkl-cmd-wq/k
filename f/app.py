@@ -9,6 +9,7 @@
 """
 
 import pickle
+from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
 import magic
@@ -93,6 +94,7 @@ def load_user():
 def worker():
     while True:
         task_id, func, base_args, tool_id = task_queue.get()
+        
         if task_id is None:
             break
         with task_store_lock:
@@ -500,7 +502,24 @@ def loginok():
                 la = False
     return jsonify({"login":lo,"admin":la,"name":name})
 
-
+@app.route("/api/gdl")
+@login_required
+@isadmin
+def get_download_list():
+    a =[]
+    for x in task_store.keys():
+        if task_store[x]['tool_id'] == 6 and task_store[x]['status'] == "running":
+            a.append(x)
+    return a,200
+            
+@app.route("/api/dl")
+@login_required
+@isadmin
+def get_task_list():
+    
+        
+    return task_store,200
+            
 
 @app.route('/')
 @login_required
@@ -577,16 +596,36 @@ def move():
 @app.route("/copy", methods=['POST'])
 @isadmin
 @login_required
-def copy():
+def call_copy():
     try:
         data = request.get_json()
         if not data:
             abort(400)
         source = data["source"]
         target = data["target"]
-
+    
     except (KeyError, TypeError):
         abort(400)
+    func = copy
+    arg_list = (source,target)
+    task_id = str(uuid.uuid4())
+    tool_id = 50
+    with task_store_lock:
+        task_store[task_id] = {
+            'status': 'pending',
+            'error': '',
+            'tool_id': tool_id,
+            'progress': {'total': 0, 'current': 0},
+            'cancel_event': Event(),
+            'path': os.path.dirname(os.path.abspath(source))
+        }
+    task_queue.put((task_id, func, arg_list, tool_id))
+
+
+
+
+def copy(source,target,cen:Event):
+    
 
     try:
         src = safe_path(source)
@@ -600,13 +639,17 @@ def copy():
     try:
         if os.path.isfile(src):
             # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
-            shutil.copy(src, dst)
+            a = pro(target=shutil.copy,args=(src,dst),daemon=True)
         elif os.path.isdir(src):
-            
-            shutil.copytree(src, dst)
+            a = pro(target=shutil.copytree,args=(src,dst),daemon=True)
+                
         else:
             return "源路径类型未知", 400
-
+        a.start()
+        while a.is_alive():
+            if cen.is_set():
+                a.terminate()
+                raise Exception("下载被取消")
         return "复制成功",200
     except Exception as e:
         logging.error(f"复制失败: {e}")
