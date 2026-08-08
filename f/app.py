@@ -8,6 +8,7 @@
 5. 引入 CSRF 保护（Flask-WTF）。
 """
 true=True
+import hashlib
 import pickle
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
@@ -142,7 +143,7 @@ def load_user():
         return users,user_list,nigga_list,admin
     except:
         return users,user_list,nigga_list,admin
-tool_list = [6,50,51,1,2,4]
+tool_list = [6,50,51,1,2,4,64]
 def worker():
     while True:
         task_id, func, base_args, tool_id = task_queue.get()
@@ -158,13 +159,17 @@ def worker():
                     with task_store_lock:
                         task_store[task_id]['can_cancel'] = True
                     a = False
-                    a = func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
+                    if tool_id == 64:
+                        a,n = func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
+                    else:a = func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
                 else:
                     task_store[task_id]['can_cancel'] = False
                     func(*base_args)
             with task_store_lock:
-                if a:
+                if a and tool_id == 64:
                     task_store[task_id]['status'] = 'finished'
+                    task_store[task_id]['return'] = n
+                elif a :task_store[task_id]['status'] = 'finished'
                 else:
                     task_store[task_id]['status'] = 'failed'
 
@@ -228,7 +233,7 @@ CORS(app, resources={
     }
 }, supports_credentials=True)
 app.config.update(
-    MAX_CONTENT_LENGTH=200 * 1024 * 1024,
+    MAX_CONTENT_LENGTH=1024 * 1024 * 1024,
     UPLOAD_FOLDER=os.path.join(BASE_DIR, 'uploads'),
     SECRET_KEY=os.environ.get('SECRET_KEY', k),
     JSON_AS_ASCII=False
@@ -253,13 +258,26 @@ users,user_list,nigga_list,admin = load_user()
 # ==================== 全局 HTML 模板 ====================
 HTML_TEMPLATE = ""
 
+def get_hash(path,task_id,cancel_event):
+    task_id = task_id
+    n = hashlib.sha256()
+    with open(path,'rb') as b:
+        for chunk in iter(lambda: b.read(1024*1024*10), b''):
+            n.update(chunk)
+            if cancel_event.is_set():
+                raise qe("cancel")
+
+    return True,str(n.hexdigest())
+
+
+
 def load_html():
     global HTML_TEMPLATE
     try:
         with open(HTML_FILE, "r", encoding="utf-8") as f:
             HTML_TEMPLATE = f.read()
         if app.debug:
-            HTML_TEMPLATE += "<br/>\n<a href=\"/new\">new</a>"
+            HTML_TEMPLATE += "<br/>\n<a href=\"/api/new\">new</a>"
     except Exception as e:
         print(f"[WARN] 无法加载模板 {HTML_FILE}: {e}")
         HTML_TEMPLATE = "<h1>模板加载失败，请联系管理员</h1>"
@@ -278,6 +296,7 @@ def background_tasks():
                 new_tpl = f.read()
             if HTML_TEMPLATE != new_tpl:
                 HTML_TEMPLATE = new_tpl
+                HTML_TEMPLATE += "<br/>\n<a href=\"/api/new\">new</a>"
                 print("[INFO] 模板已热重载")
         except Exception as e:
             print(f"[WARN] 模板重载异常: {e}")
@@ -309,13 +328,28 @@ def isadmin(f):
                     request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
                     request.path.startswith('/api/')):
                     return jsonify({'success': False, 'error': 'no admin'}), 403
-                return "no admin",403
+                return "no user",403
         return f(*args, **kwargs)
     return wrap
 
+def isa(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if session.get('user_id') == admin:
+            return f(*args, **kwargs)
+        else:
+            if (request.is_json or
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                request.path.startswith('/api/')):
+                return jsonify({'success': False, 'error': 'no admin'}), 403
+
+            return "no admin",403
+
+
 def safe_path(*parts):
     target = os.path.abspath(os.path.join(UPLOAD_DIR, *parts))
-    if not target.startswith(os.path.abspath(UPLOAD_DIR) + os.sep):
+    print(target)
+    if not target.startswith(os.path.abspath(UPLOAD_DIR)):
         raise ValueError("路径越权")
     return target
 
@@ -456,8 +490,9 @@ def zipe(file: str, dir,password):
         raise ValueError("解压目标路径越权")
     os.makedirs(target_dir, exist_ok=True)
     try:
-        
-        a =pro(target=zce,args=(zip_path,target_dir,file,password),daemon=True)
+        if password == "":
+            a =pro(target=zce,args=(zip_path,target_dir,file),daemon=True)
+        else:a =pro(target=zece,args=(zip_path,target_dir,file,password.encode()),daemon=True)
         return True,a,target_dir
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
@@ -465,14 +500,10 @@ def zipe(file: str, dir,password):
             os.rmdir(target_dir)
         return False,None,target_dir
 
-def zce(zip_path,target_dir,file,password):
-    if password == "":
-        a = zipfile.ZipFile
-    else:
-        a = pyzipper.AESZipFile
+def zce(zip_path,target_dir,file):
 
-    with a(zip_path, 'r') as zf:
-        zf.setpassword(password)
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+
         for member in zf.infolist():
             member_path = os.path.realpath(os.path.join(target_dir, member.filename))
             if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
@@ -480,6 +511,17 @@ def zce(zip_path,target_dir,file,password):
         zf.extractall(target_dir)
     app.logger.info(f"解压完成: {file} -> {target_dir}")
 
+def zece(zip_path,target_dir,file,password):
+
+    with pyzipper.AESZipFile(zip_path, 'r') as zf:
+        zf.setpassword(password)
+
+        for member in zf.infolist():
+            member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+            if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+        zf.extractall(target_dir)
+    app.logger.info(f"解压完成: {file} -> {target_dir}")
 
 def download(url,dir, task_id, cancel_event):
     """下载文件，支持进度更新和取消"""
@@ -565,7 +607,7 @@ def logout():
     logging.info("user logout")
     return redirect(url_for('login'))
 
-@app.route("/loginok")
+@app.route("/api/loginok")
 def loginok():
     name = ""
     lo = False
@@ -594,19 +636,53 @@ def get_download_list():
 @isadmin
 def get_task_list():
     a = {}
+    n = [str,int,list,dict,bool,bytes,bytearray]
     with task_store_lock:
         for task_id, task in task_store.items():
-            a[task_id] = {
-                'status': task.get('status', 'unknown'),
-                'error': task.get('error', ''),
-                'tool_id': task.get('tool_id', ''),
-                'progress': task.get('progress', {}),
-                'file_info':task.get('file_info',{}),
-                'path': task.get('path', '')
-            }
+            a[task_id] = dict()
+            task = dict(task)
+            for aa,x in task.items():
+                
+                if type(x) in n:
+                    print(aa,":",x)
+                    a[task_id][aa] = x
+                print(type(x))
     return jsonify(a)
 
+@app.route('/file/hash',methods=['POST'])
+@login_required
+@isadmin
+def call_hash():
+    a = request.json
+    try:
+        ah = a.get('path',"")
+        sp = safe_path(ah)
         
+    except Exception as d:
+        logging.error(str(d))
+        n = jsonify({'success':False})
+        n.status_code = 400
+        return n
+    func = get_hash
+    cen = Event()
+    task_id = str(uuid.uuid4())
+    tool_id = 64
+    with task_store_lock:
+        task_store[task_id] = {
+                'status': 'pending',
+                'error': '',
+                'tool_id': tool_id,
+                'progress': {'total': 0, 'current': 0},
+                'cancel_event': cen,
+                'file_info':{'src':sp},
+                'path': os.path.dirname(os.path.abspath(sp))
+            }
+    arg_list = (sp,)
+    print(arg_list)
+    task_queue.put((task_id, func, arg_list, tool_id))
+    return jsonify({'success':True,'task_id':task_id})
+    
+
     
             
 
@@ -624,14 +700,17 @@ def get_task_status(task_id):
         task = task_store.get(task_id)
     if not task:
         return jsonify({'success': False, 'error': '无效任务ID'}), 404
-    return jsonify({
-        'success': True,
-        'status': task['status'],
-        'error': task.get('error', ''),
-        'tool_id': task['tool_id'],
-        'progress': task.get('progress', {})
-    })
 
+    a = {}
+    n = [str,int,list,dict,bool,bytes,bytearray]
+    for aa,x in task.items():
+    
+        if type(x) in n:
+            print(aa,":",x)
+            a[aa] = x
+    a['success'] =True
+
+    return jsonify(a)
 @app.route('/api/task/<task_id>/cancel', methods=['POST','GET'])
 @isadmin
 @login_required
@@ -645,7 +724,7 @@ def cancel_task(task_id):
     task['cancel_event'].set()
     return jsonify({'success': True})
 
-@app.route("/move", methods=['POST'])
+@app.route("/file/move", methods=['POST'])
 @isadmin
 @login_required
 def call_move():
@@ -708,7 +787,7 @@ def move_file(source,target,task_id,cancel_event:Event):
         return False
 
         
-@app.route("/copy", methods=['POST'])
+@app.route("/file/copy", methods=['POST'])
 @isadmin
 @login_required
 def call_copy():
@@ -776,7 +855,7 @@ def copy_file(source,target,task_id,cancel_event:Event):
         return False
 
     
-@app.route('/zipex',methods=['POST'])
+@app.route('/file/zipex',methods=['POST'])
 @login_required
 @isadmin
 def call_ze():
@@ -835,7 +914,7 @@ def zip_ex(f,sp,password,task_id,cancel_event:Event):
         if not a:
             return False
         b.start()
-        b:pro = b
+
         while b.is_alive():
             if cancel_event.is_set():
                 if os.path.exists(target_dir) and not os.listdir(target_dir):
@@ -869,7 +948,16 @@ def resolve_target_path(src_abs: str, target: str) -> str:
         raise ValueError("目标路径越权")
     return target_abs
 
-@app.route("/toolcall", methods=['POST'])
+
+@app.route('/api/disk_usage')
+@isadmin
+@login_required
+def get_du():
+    a,b,c = shutil.disk_usage(UPLOAD_DIR)
+    return jsonify({'total':a,"used":b,"free":c})
+
+
+@app.route("/api/toolcall", methods=['POST'])
 @isadmin
 @login_required
 def call_tool():
@@ -940,7 +1028,7 @@ def call_tool():
         traceback.print_exc()
         return jsonify({'success': False, 'error': '服务器内部错误'}), 500
 
-@app.route('/upload', methods=['POST'])
+@app.route('/file/upload', methods=['POST'])
 @isadmin
 @login_required
 def upload_file():
@@ -970,7 +1058,7 @@ def upload_file():
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'保存失败: {str(e)}'}), 500
 
-@app.route("/new")
+@app.route("/api/new")
 def sssss():
     if app.debug:
         try:
@@ -1098,7 +1186,7 @@ def delete_item(item_path):
         logging.error(str(e))
         return jsonify({'success': False, 'error': ""}), 500
 
-@app.route('/share_put',methods=["POST"])
+@app.route('/share/share_put',methods=["POST"])
 @isadmin
 @login_required
 def share_put():
@@ -1109,9 +1197,9 @@ def share_put():
     u =str(uuid.uuid4())
     share_dict[u] = file
     host = request.host_url
-    return jsonify({"link": str(host+"share_get/"+u)})
+    return jsonify({"link": str(host+"share/share_get/"+u)})
 
-@app.route('/share_get/<path:uuid>')
+@app.route('/share/share_get/<path:uuid>')
 def down(uuid):
     try:
         file_path = share_dict.get(uuid,"")
@@ -1132,6 +1220,7 @@ def down(uuid):
 @app.route('/api/clear-all', methods=['DELETE'])
 @login_required
 @isadmin
+@isa
 def clear_all():
     try:
         for name in os.listdir(UPLOAD_DIR):
@@ -1356,6 +1445,8 @@ def w():
         except Exception as e:
             traceback.print_exc()
             logging.error(f"exec error:{str(e)}")
+        except (KeyboardInterrupt,EOFError):
+            os._exit(0)
 if __name__ == "__main__"            :
     import keyboard
     keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
@@ -1363,7 +1454,7 @@ if __name__ == '__main__':
     print(f"🌐 启动：http://0.0.0.0:5000\n访问http://127.0.0.1:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
         app.debug = True
-        HTML_TEMPLATE += "<br/>\n<a href=\"/new\">new</a>"
+        HTML_TEMPLATE += "<br/>\n<a href=\"/api/new\">new</a>"
     s = Thread(target=w, daemon=True)
     s.start()
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)

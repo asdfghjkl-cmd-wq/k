@@ -8,6 +8,15 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 
+#disk_usage
+{
+	border:1px solid #000000;
+	padding:10px 40px; 
+	background:#ffffff;
+	width:50em;
+	border-radius:25px;
+}
+
 body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
 
 .container{max-width:1200px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
@@ -60,6 +69,9 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
 <div class="main">
 <div class="breadcrumb" id="breadcrumb"><a onclick="nav('')">根目录</a></div>
 
+
+
+
 <div class="upload-area" id="dropArea">
   <h3>拖拽文件到此处或点击下方按钮选择</h3>
   <p>当前目录：<strong id="curDir">根目录</strong></p>
@@ -95,12 +107,18 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
 </div>
 </div>
 
+<br /><br />
+<div id="disk_usage"></div>
+
+
+
 <div  class="modal" id="file">
   <div class="modal-content">
     <h3>操作文件/文件夹</h3>
     <select id="file_action">
       <option value=1>移动</option>
       <option value=3>复制</option>
+      <option value="5">计算哈希</option>
     </select>
   <br>
     目标路径: <input type="text" id="file_path" placeholder="目标路径">
@@ -120,9 +138,13 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
       <option value=1>移动</option>
       <option value=4>解压</option>
       <option value=3>复制</option>
+      <option value="5">计算哈希</option>
     </select>
   <br>
     目标路径: <input type="text" id="file_path_2" placeholder="目标路径">
+    <div id="passwordt" style="display:none"> 
+    密码: <input type="text" id="password" placeholder="密码(如果有的话)" >
+    </div>
     <br>
 
     <div class="modal-actions">
@@ -248,9 +270,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('folderName').value = '';
     document.getElementById('folderName').focus();
   });
-
+  get_du()
   refresh();
 });
+
+  async function get_du() {
+    try {
+      const response = await csrfFetch('/api/disk_usage');
+      if (!response.ok) {
+        console.error('磁盘使用信息获取失败:', response.status);
+        document.getElementById('disk_usage').innerHTML = '无法获取磁盘信息';
+        return;
+      }
+      const data = await response.json();
+      // 后端返回 { total, used, free } 单位字节
+      const totalGB = (data.total / (1024 ** 3)).toFixed(2);
+      const usedGB = (data.used / (1024 ** 3)).toFixed(2);
+      const freeGB = (data.free / (1024 ** 3)).toFixed(2);
+      document.getElementById('disk_usage').innerHTML =
+        `总空间: ${totalGB} GB | 已用: ${usedGB} GB | 剩余: ${freeGB} GB`;
+    } catch (error) {
+      console.error('获取磁盘使用率出错:', error);
+      document.getElementById('disk_usage').innerHTML = '加载磁盘信息失败';
+    }
+  }
 
 // ========== 文件选择与列表 ==========
 function addFiles(files) {
@@ -364,7 +407,7 @@ function uploadFileWithProgress(file, folder, progressItemDiv) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', folder);
-    xhr.open('POST', '/upload', true);
+    xhr.open('POST', '/file/upload', true);
     xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
 
     const progressInner = progressItemDiv.querySelector('.progress-inner');
@@ -498,7 +541,7 @@ function updateBreadcrumb() {
 }
 
 async function share(file_name) {
-  const f = await csrfFetch("/share_put",{
+  const f = await csrfFetch("/share/share_put",{
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ file: file_name })
@@ -529,7 +572,7 @@ async function download() {
 const activeTaskElements = new Map();
 
 async function call_tool_b(tool, arg, path) {
-  let resp = await csrfFetch('/toolcall', {
+  let resp = await csrfFetch('/api/toolcall', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tool: tool, args: arg ,path: path})
@@ -691,13 +734,27 @@ function showStatus(msg, type) {
 async function file_call(p) {
   upok = 0;
   document.getElementById('file').style.display = 'flex';
+  
   filess(p);
   
 }
 
+  async function zpass() {
+    if (upok === 0) {
+      const a = document.getElementById("file_action2").value;
+      if (a === "4") { document.getElementById("passwordt").style.display = "flex"; }
+      else { document.getElementById("passwordt").style.display = "none"; }
+      setTimeout(() => zpass(), 400)
+    } else {
+      document.getElementById("passwordt").style.display = "none";
+      return
+    }
+  }
+
 async function file2_call(p) {
   upok = 0;
   document.getElementById('file2').style.display = 'flex';
+  setTimeout(() => zpass(), 800)
   filess2(p);
   
 }
@@ -711,6 +768,8 @@ async function ca2() {
   }
   else if (a === "3"){
     upok = 3
+  } else if (a === "5") {
+    upok = 5
   }
 }
 async function ca() {
@@ -723,6 +782,8 @@ async function ca() {
   }
   else if (a === "3"){
     upok = 3
+  }else if (a === "5"){
+    upok = 5
   }
 }
 async function filess2(path) {
@@ -743,6 +804,10 @@ async function filess2(path) {
     zipjy(path)
     document.getElementById('file').style.display = 'none';
     document.getElementById('file2').style.display = 'none';
+  } else if (upok === 5) {
+    hash(path);
+    document.getElementById('file').style.display = 'none';
+    document.getElementById('file2').style.display = 'none';
   }
 }
 // 修复 file 函数：setTimeout 改为箭头函数，防止立即调用
@@ -761,18 +826,68 @@ async function filess(path) {
     copyItem(path);
     document.getElementById('file').style.display = 'none';
     document.getElementById('file2').style.display = 'none';
-  } 
+  } else if (upok === 5) {
+    hash(path);
+    document.getElementById('file').style.display = 'none';
+    document.getElementById('file2').style.display = 'none';}
+}
+
+async function hash(path) {
+  s = await csrfFetch('/file/hash',{
+    method: 'POST',
+    headers:{ 'Content-Type': 'application/json' },
+    body:JSON.stringify({path:path})
+  })
+  if (s.status === 500) { showStatus("服务器错误", "error"); return }
+
+  if (s.status === 400) { showStatus("参数错误", 'error'); return }
+  try {
+    const data = await s.json();
+    success = data.success !== false;
+    var taskId = data.task_id;
+  } catch (e) {
+    // 如果响应体不是 JSON，则视为成功（状态码 200）
+    success = s.status === 200;
+  }
+  if (success) {
+    showStatus('计算中', "success");
+    refresh();
+
+
+    const poll = async () => {
+      let statusResp = await csrfFetch(`/api/task/${taskId}`);
+      if (statusResp.status === 401) { showStatus('登录过期', 'error'); removeProgress(taskId); return; }
+      let statusData = await statusResp.json();
+
+
+
+      if (statusData.status === 'finished') {
+        showStatus(`计算完成！sha-256:${statusData.return}`, "success");
+        removeProgress(taskId);
+        refresh();
+      } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+        const msg = statusData.status === 'cancelled' ? '已取消' : (statusData.error || '操作失败');
+        showStatus(msg, 'error');
+        removeProgress(taskId);
+      } else {
+        setTimeout(poll, 1000);
+      }
+    };
+    poll()
+  }
 }
 
 async function zipjy(path) {
-  var targetPath = document.getElementById('file_path').value.trim();
+  var targetPath = document.getElementById('file_path_2').value.trim();
+  var passwords = document.getElementById(`password`).value.trim();
   if (!targetPath) {targetPath = currentPath}
-  s = await csrfFetch('/zipex',{
+  s = await csrfFetch('/file/zipex',{
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         'path': path,
-        'outpath': targetPath
+        'outpath': targetPath,
+        'password':passwords
       })})
   if (s.status === 500) {showStatus("服务器错误","error");return}
   if (s.status === 501) {showStatus("未支持","error");return}
@@ -820,7 +935,7 @@ async function moveItem(Path) {
 
   if (!targetPath) { alert('请输入目标路径'); return; }
   try {
-    const resp = await csrfFetch('/move', {
+    const resp = await csrfFetch('/file/move', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -876,7 +991,7 @@ async function moveItem2(Path) {
 
   if (!targetPath) { alert('请输入目标路径'); return; }
   try {
-    const resp = await csrfFetch('/move', {
+    const resp = await csrfFetch('/file/move', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -931,7 +1046,7 @@ async function copyItem2(Path) {
 
   if (!targetPath) { alert('请输入目标路径'); return; }
   try {
-    const resp = await csrfFetch('/copy', {
+    const resp = await csrfFetch('/file/copy', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -989,7 +1104,7 @@ async function copyItem(Path) {
 
   if (!targetPath) { alert('请输入目标路径'); return; }
   try {
-    const resp = await csrfFetch('/copy', {
+    const resp = await csrfFetch('/file/copy', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
