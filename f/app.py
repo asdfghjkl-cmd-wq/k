@@ -10,6 +10,7 @@
 #f
 true=True
 import hashlib
+from math import fabs
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
@@ -1304,15 +1305,42 @@ def create_file(filename):
 
 
 def w():
+    global admin,users
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s.bind(('127.0.0.1',12346))
     s.listen(1)
     time.sleep(1)
     while True:
+        print('aaa',flush=False)
+        login_r = False
         sf,m = s.accept()
         print("m",flush=True)
+        try:
+            
+            send(sf,'auth')
+            a = listen(sf).decode()
+            
+            nm = a.split(',')
+            if nm[0] == admin:
+                if check_password_hash(users[nm[0]],nm[1]):
+                    send(sf,"y")
+                    print('auth ok',flush=true)
+                    login_r = True
+                else:
+                    print(nm,flush=True)
+                    send(sf,"n")
+                    sf.close()
+            else:
+                print(nm,flush=True)
+                send(sf,"n")
+                sf.close()
+        except Exception as e:
+            traceback.print_exc()
+            send(sf,"er")
+        
         while True:
-
+            if not login_r:
+                break
             
 
             a = listen(sf).decode()
@@ -1356,7 +1384,7 @@ def w():
                     if len(n) == 3:
                         username = n[1]
                         password = n[2]
-                        users[username] = generate_password_hash(password)
+                        users[username] = hashlib.sha256(password.encode())
                         user_list.append(username)
                         send(sf,f"用户 {username} 已添加")
                         save_user()
@@ -1379,7 +1407,7 @@ def w():
                                 save_user()
 
                 elif a.lower().startswith("listuser"):
-                    global admin
+                    
                     an = []
                     an.append("当前用户列表:")
                     for user in users.keys():

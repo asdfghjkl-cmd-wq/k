@@ -20,9 +20,10 @@ def send(s:socket.socket,msg:str):
     s.send(b"</s>")
  
 n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-a = n.connect_ex(('127.0.0.1',12346))
-if a != 0:
-    subprocess.run(['start','python.exe',os.path.join(a,'app.py')],shell=True,start_new_session=True)
+n.settimeout(5)
+n.connect(('127.0.0.1',12346))
+a = listen(n)
+
 while True:
     a = input('exec:')
     if a == 'quit':
