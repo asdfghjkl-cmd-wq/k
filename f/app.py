@@ -7,9 +7,9 @@
 4. 优化并发控制，避免进度计数异常（前端已建议修复，此处确保后端稳健）。
 5. 引入 CSRF 保护（Flask-WTF）。
 """
+#f
 true=True
 import hashlib
-import pickle
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
@@ -19,7 +19,7 @@ from threading import Thread, Lock, Event
 from queue import Queue
 from urllib.parse import urlparse
 import logging
-
+import socket
 from string import ascii_lowercase, ascii_letters
 from flask import (Flask, request, jsonify, render_template_string,
                    make_response, send_from_directory, session, redirect, url_for, abort)
@@ -72,7 +72,7 @@ class tool:
                     if not data:
                         break
                     file_count += 1
-                    print(file_count)
+
                     # 4位编号便于排序
                     out_name = os.path.join(output_dir, f"{file_count:04d}.data")
                     with  open(out_name, "wb") as chunk:
@@ -117,23 +117,23 @@ def save_user():
             'nl':nigga_list,
             "admin":admin
         }
-        with open(f"{BASE_DIR}\\user.pkl","wb") as d:
-            pickle.dump(n,d)
+        with open(f"{BASE_DIR}\\user.pkl","w") as d:
+            json.dump(n,d)
         
-    except: 
-        print("save over",flush=True)
+    except Exception as e: 
+        print("save over:",e,flush=True)
 
 def load_user():
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', os.environ.get('a', name))
-    ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', os.environ.get('p', password)))
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', os.environ.get('a', None))
+    ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', os.environ.get('p', None)))
     users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
-    users["admina"] = generate_password_hash("aadmin123")
-    nigga_list = ["admina"]
-    user_list = [os.environ.get('ADMIN_USERNAME', name)]
-    admin = os.environ.get('ADMIN_USERNAME', name)
+    nigga_list = []
+    user_list = [ADMIN_USERNAME]
+    admin = ADMIN_USERNAME
+
     try:
         with open(f"{BASE_DIR}\\user.pkl","rb") as l:
-            n = dict(pickle.load(l))
+            n = dict(json.load(l))
         users = n.get("ud")
         user_list = n.get("ul")
         nigga_list = n.get("nl")
@@ -348,9 +348,14 @@ def isa(f):
 
 def safe_path(*parts):
     target = os.path.abspath(os.path.join(UPLOAD_DIR, *parts))
+    target = os.path.realpath(target)
     print(target)
-    if not target.startswith(os.path.abspath(UPLOAD_DIR)):
-        raise ValueError("路径越权")
+    if sys.platform.startswith('win'):
+        if not target.lower().startswith(os.path.abspath(UPLOAD_DIR).lower()):
+            raise ValueError("路径越权")
+    else: 
+        if not target.startswith(os.path.abspath(UPLOAD_DIR)):
+            raise ValueError("路径越权")
     return target
 
 def clean_filename(filename):
@@ -598,7 +603,7 @@ def login():
             session['user_id'] = username
             return redirect(request.args.get('next') or url_for('index'))
         error = '用户名或密码错误'
-        logging.warning(f"user login failure.from {request.remote_addr} user:{username},password:{password}")
+        logging.warning(f"user login failure.from {request.remote_addr} user:{username},password:{password[:4]}")
     return render_template_string(LOGIN_TEMPLATE, error=error)
 
 @app.route('/logout')
@@ -893,8 +898,8 @@ def call_ze():
 
 def zip_ex(f,sp,password,task_id,cancel_event:Event):
    
-    f = os.path.join(UPLOAD_DIR,f)
-    print(f,flush=True)
+
+
     f =safe_path(f)
     print(f,flush=True)
     if not os.path.exists(f):
@@ -1071,15 +1076,7 @@ def sssss():
         return redirect("/")
 
 def file_type(mine:magic.Magic,path):
-    if contains_chinese(path):
-        _,pn = os.path.splitext(os.path.basename(path))
-        with tempfile.TemporaryDirectory("server",dir=BASE_DIR) as tdir:
-
-            a = os.path.join(tdir,"a"+pn)
-            os.link(path,a)
-            nb = os.path.abspath(a)
-            n = mine.from_file(nb)
-    else:n = mine.from_file(path)
+    n = mine.from_buffer(open(path,'rb').read(8192))
     return n
 
 
@@ -1191,25 +1188,36 @@ def delete_item(item_path):
 @login_required
 def share_put():
     global share_dict
-
+    
     a = dict(request.json)
     file = a.get('file')
     u =str(uuid.uuid4())
-    share_dict[u] = file
+    try:
+        full = safe_path(file)       # 校验通过后得到绝对路径
+    except ValueError:
+        return jsonify({'success': False, 'error': '路径非法'}), 400
+    share_dict[u] = {}
+    share_dict[u]['link'] = full
+    share_dict[u]['time'] = time.time()
     host = request.host_url
     return jsonify({"link": str(host+"share/share_get/"+u)})
 
 @app.route('/share/share_get/<path:uuid>')
 def down(uuid):
     try:
-        file_path = share_dict.get(uuid,"")
-    except:
+        file_path = share_dict.get(uuid,{}).get('link',"")
+        if time.time() - share_dict.get(uuid,{}).get('time',0) > 86400:
+            return 'time is lost',404
+    except Exception as e:
+        print(e,flush=True)
         abort(404)
     try:
         full = safe_path(file_path)
-    except ValueError:
+    except ValueError as e:
+        print(e,flush=True)
         abort(404)
     if not os.path.isfile(full): abort(404)
+    
     dirname = os.path.dirname(full)
     filename = os.path.basename(full)
     resp = make_response(send_from_directory(dirname, filename, as_attachment=True))
@@ -1258,7 +1266,7 @@ def download_file(file_path):
 def not_found(e):
     if request.path.startswith('/api/'):
         return jsonify({'success': False, 'error': 'Not found'}), 404
-    return redirect(url_for('login'))
+    return "not found<br><a href=\"/\"></a>"
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
@@ -1292,162 +1300,171 @@ def create_file(filename):
     with open(filename, 'a'):
         os.utime(filename, None)
 
-def restart_service():
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
-
-def fix_userl():
-    for user in users.keys():
-        if user not in nigga_list:
-            if user not in user_list:
-                user_list.append(user)
-
-    a = 0
-    for user in user_list:
-        if user in nigga_list:
-            nigga_list.remove(user)
-        if user_list.count(user) != 1:
-            user_list.pop(a)
-        if user not in users:
-            user_list.remove(user)
-        a += 1
-    a = 0
-    for user in nigga_list:
-        if nigga_list.count(user) != 1:
-            nigga_list.pop(a)
-        if user not in users:
-            nigga_list.remove(user)
-        a += 1
-    print("fix")
 
 
 
 def w():
+    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.bind(('127.0.0.1',12346))
+    s.listen(1)
     time.sleep(1)
     while True:
-        if len(nigga_list)+len(user_list) != len(users):fix_userl()
+        sf,m = s.accept()
+        print("m",flush=True)
+        while True:
 
-        a = input("exec:").strip()
-        logging.info(f"exec:{a.split(" ")[0:2]}")
-        try:
-            if a == "exit" or a == "\\" or a == "q":
-                for a in task_store.keys():
-                    task_store[a].get("cancel_event","").set()
-                os._exit(0)
-            elif a.lower().startswith("ls"):
-                sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","").strip()))
-                print(sss)
-            elif a == "load":
-                load_html()
-                print("fuck",flush=True)
-            elif a.lower().startswith('debug'):
-                ddd = a.lower().replace("debug","").strip()
-                if ddd == "open":
-                    create_file(os.path.join(BASE_DIR,"de.lock"))
-                    app.debug = True
+            
 
-                elif ddd == "close":
-                    if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
-                        os.remove(os.path.join(BASE_DIR,"de.lock"))
-                    app.debug = False
+            a = listen(sf).decode()
+            if a == "":
+                break
+            print(a,flush=True)
+            logging.info(f"exec:{a.split(" ")[0:2]}")
+            
+            try:
+                if a == "</c>":
+                    sf.shutdown(socket.SHUT_RDWR)
+                    sf.close()
+                    break
+                if a == "exit" or a == "\\" or a == "q":
+                    for a in task_store.keys():
+                        task_store[a].get("cancel_event","").set()
+                    os._exit(0)
+                elif a.lower().startswith("ls"):
+                    sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","").strip()))
+                    send(sf,sss)
+                elif a == "load":
+                    load_html()
+                    send(sf,"load ok")
+                elif a.lower().startswith('debug'):
+                    ddd = a.lower().replace("debug","").strip()
+                    if ddd == "open":
+                        create_file(os.path.join(BASE_DIR,"de.lock"))
+                        app.debug = True
 
-            elif a.lower() == "restart":
-                restart_service()
-            elif a.lower().startswith("adduser"):
-                n = a.split(" ")
-                for i in range(len(n)):
-                 if n[i] == "":
-                     n.pop(i)
-                if len(n) == 3:
-                    username = n[1]
-                    password = n[2]
-                    users[username] = generate_password_hash(password)
-                    user_list.append(username)
-                    print(f"用户 {username} 已添加")
-                    save_user()
-            elif a.lower().startswith("deluser"):
-                n = a.split(" ")
-                for i in range(len(n)):
-                 if n[i] == "":
-                     n.pop(i)
-                if len(n) == 2:
-                    username = n[1]
-                    if username in users and username in user_list:
-                        del users[username]
-                        user_list.remove(username)
-                        print(f"用户 {username} 已删除")
+                    elif ddd == "close":
+                        if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
+                            os.remove(os.path.join(BASE_DIR,"de.lock"))
+                        app.debug = False
+                    send(sf, f"debug mode {'open' if app.debug else 'close'} ok")
+
+                elif a.lower().startswith("adduser"):
+                    n = a.split(" ")
+                    for i in range(len(n)):
+                        if n[i] == "":
+                            n.pop(i)
+                    if len(n) == 3:
+                        username = n[1]
+                        password = n[2]
+                        users[username] = generate_password_hash(password)
+                        user_list.append(username)
+                        send(sf,f"用户 {username} 已添加")
                         save_user()
-                    if username in users and username in nigga_list:
+                elif a.lower().startswith("deluser"):
+                    n = a.split(" ")
+                    for i in range(len(n)):
+                        if n[i] == "":
+                            n.pop(i)
+                    if len(n) == 2:
+                        username = n[1]
+                        if username in users and username in user_list:
                             del users[username]
-                            nigga_list.remove(username)
-                            print(f"用户 {username} 已删除")
+                            user_list.remove(username)
+                            send(sf,f"用户 {username} 已删除")
                             save_user()
+                        if username in users and username in nigga_list:
+                                del users[username]
+                                nigga_list.remove(username)
+                                send(sf,f"用户 {username} 已删除")
+                                save_user()
 
-            elif a.lower().startswith("listuser"):
-                global admin
-                print("当前用户列表:")
-                for user in users.keys():
-                    a = ""
-                    if user in nigga_list:a += " forbid"
-                    elif user in user_list:a += " authorized"
+                elif a.lower().startswith("listuser"):
+                    global admin
+                    an = []
+                    an.append("当前用户列表:")
+                    for user in users.keys():
+                        a = ""
+                        if user in nigga_list:a += " forbid"
+                        elif user in user_list:a += " authorized"
                  
-                    else:user_list.append(user);a += " authorized"
-                    if user == admin:a += " admin"
-                    print(f"--{user} {a}")
-                save_user()
+                        else:user_list.append(user);a += " authorized"
+                        if user == admin:a += " admin"
+                        an.append(f"--{user} {a}")
+                    send(sf,"\n".join(an))
+                    save_user()
                 
-            elif a.lower().startswith("addnigga"):
-                n = a.split(" ")
-                for i in range(len(n)):
-                    if n[i] == "":
-                        n.pop(i)
+                elif a.lower().startswith("addnigga"):
+                    n = a.split(" ")
+                    for i in range(len(n)):
+                        if n[i] == "":
+                            n.pop(i)
+                        if len(n) == 2:
+                            username = n[1]
+                            if username not in users:
+                                send(sf,f"{username}不存在")
+                            elif username not in nigga_list:
+                                nigga_list.append(username)
+                                user_list.remove(username)
+                                send(sf,f"用户 {username} 已移入黑名单")
+                                save_user()
+                elif a.lower().startswith("delnigga"):
+                    n = a.split(" ")
+                    for i in range(len(n)):
+                        if n[i] == "":
+                            n.pop(i)
                     if len(n) == 2:
                         username = n[1]
                         if username not in users:
-                            print(f"{username}不存在")
-                        elif username not in nigga_list:
-                            nigga_list.append(username)
-                            user_list.remove(username)
-                            print(f"用户 {username} 已移入黑名单")
+                            send(sf,f"{username}不存在")
+                        elif username not in user_list:
+                            nigga_list.remove(username)
+                            user_list.append(username)
+                            send(sf,f"用户 {username} 已移出黑名单")
                             save_user()
-            elif a.lower().startswith("delnigga"):
-                n = a.split(" ")
-                for i in range(len(n)):
-                    if n[i] == "":
-                        n.pop(i)
-                if len(n) == 2:
-                    username = n[1]
-                    if username not in users:
-                        print(f"{username}不存在")
-                    elif username not in user_list:
-                        nigga_list.remove(username)
-                        user_list.append(username)
-                        print(f"用户 {username} 已移出黑名单")
-                        save_user()
-            elif a.lower().startswith("setadmin"):
-                n = a.split(" ")
-                for i in range(len(n)):
-                    if n[i] == "":
-                        n.pop(i)
-                if len(n) == 2:
-                    username = n[1]
-                    if username not in users:
-                        print(f"{username}不存在")
-                    elif username in user_list :
-                        admin = username
-                        print(f"用户 {username} 已设为管理员")
-                        save_user()
-            elif app.debug and a.lower().startswith("get") :
-                n = a.split(" ")
-                print(eval(n[1]),flush=True)
-            
-            else: print("not found")
-        except Exception as e:
-            traceback.print_exc()
-            logging.error(f"exec error:{str(e)}")
-        except (KeyboardInterrupt,EOFError):
-            os._exit(0)
-if __name__ == "__main__"            :
+                elif a.lower().startswith("setadmin"):
+                    n = a.split(" ")
+                    for i in range(len(n)):
+                        if n[i] == "":
+                            n.pop(i)
+                    if len(n) == 2:
+                        username = n[1]
+                        if username not in users:
+                            send(sf,f"{username}不存在")
+                        elif username in user_list :
+                            admin = username
+                            send(sf,f"用户 {username} 已设为管理员")
+                            save_user()
+                elif app.debug and a.lower().startswith("get") :
+                    n = a.split(" ")
+                    send(sf,str(globals()[n[1]]))
+
+                else: send(sf,"not found")
+            except Exception as e:
+                traceback.print_exc()
+                logging.error(f"exec error:{str(e)}")
+                send(sf, f"error: {e}")
+            except (KeyboardInterrupt,EOFError):
+                os._exit(0)
+
+def listen(s:socket.socket):
+    sn = b""
+    while True:
+        snb = s.recv(1024)
+        if snb == b"":
+            return b""
+        if snb.endswith(b"</s>"):
+            sn += snb.replace(b"</s>",b"")
+
+            return sn
+        sn += snb
+
+def send(s:socket.socket,msg:str):
+    s.send(msg.encode())
+    s.send(b"</s>")
+
+
+
+if __name__ == "__main__":
     import keyboard
     keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
 if __name__ == '__main__':
