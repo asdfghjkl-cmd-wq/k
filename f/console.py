@@ -1,7 +1,32 @@
+import os
 import socket
 import struct
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
+
+def update(ip,port):
+    ac = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    ac.connect((ip,port))
+    fil = input("path:")
+    if os.path.isfile(fil):
+        name = os.path.basename(fil)
+        size = os.path.getsize(fil)
+        n:str = name+";"+str(size)
+        ac.send(n.encode())
+        ac.recv(10)
+        with open(fil,'rb') as d:
+            while True:
+                n =d.read(2048)
+                if not n:
+                    break
+                ac.send(n)
+        
+    ac.sendall(b'\0')
+    ac.shutdown(socket.SHUT_WR)   # 告诉对方我已写完
+    ac.recv(10)                   # 等待确认
+    ac.close()
+
+
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 aa = input("address:")
@@ -11,6 +36,9 @@ if ':' in aa:
     bb = xx[1]
 else:
     bb = input('post:')
+if aa=='':
+    aa="127.0.0.1"
+    bb = "7060"
 if bb.isdecimal():
     bb = int(bb)
 else:exit()
@@ -27,6 +55,8 @@ public_key = RSA.import_key(pub_bytes)
 # 2. 加密并发送认证信息
 n = input('user:')
 p = input('password:')
+if n == "" and p == "":
+    p = n = 'admin'
 cipher = PKCS1_OAEP.new(public_key)
 auth_data = f'{n},{p}'.encode()   # 注意长度不能超过86字节
 enc = cipher.encrypt(auth_data)
@@ -44,6 +74,10 @@ print('认证结果:', response.decode())
 # 4. 后续命令同样加密发送，明文接收回复
 while True:
     cmd = input('> ')
+    if cmd == 'quit':
+        exit(0)
+    
+
     enc_cmd = cipher.encrypt(cmd.encode())
     sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)
     resp = b''
@@ -53,3 +87,7 @@ while True:
             break
         resp += ch
     print(resp.decode())
+    if cmd == 'update':
+        n = int(resp.decode())
+        update(aa,n)
+    

@@ -9,6 +9,8 @@
 """
 #f
 
+import threading
+
 import psutil
 
 def is_port_in_use(port):
@@ -130,7 +132,7 @@ def save_user():
         }
         with open(f"{BASE_DIR}\\user.pkl","w") as d:
             json.dump(n,d)
-        
+        print('save ok',flush=True)
     except Exception as e: 
         print("save over:",e,flush=True)
 
@@ -1519,6 +1521,14 @@ def w(port):
                         send_plain(sf, str(globals()[parts[1]]))
                     except KeyError:
                         send_plain(sf, f"变量 {parts[1]} 不存在")
+                elif cmd.lower() == 'update':
+                    while True:
+                        sm = random.randint(1024,65535)
+                        if not is_port_in_use(sm):
+                            break
+                    a = Thread(target=update_file,args=(client_addr,sm),daemon=True)
+                    a.start()
+                    send_plain(sf,str(sm))
                 else:
                     send_plain(sf, "未知命令")
             except Exception as e:
@@ -1530,6 +1540,30 @@ def w(port):
                     break
         # 连接关闭后继续等待新连接
 
+
+def update_file(ip,sm):
+
+    print(f'启动上传:{sm}   {str(ip[0])}',flush=True)
+    a = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    
+    a.bind((str(ip[0]),sm))
+    a.listen(1)
+    sd,m = a.accept()
+    md =sd.recv(1024).decode()
+    file = md.split(";")[0]
+    sd.send(b"ok")
+    with open(os.path.join(UPLOAD_DIR, file), 'wb') as fw:
+        while True:
+            sn = sd.recv(2048)
+            if not sn:          # 连接关闭
+                break
+            if sn.endswith(b'\0'):
+                fw.write(sn.removesuffix(b'\0'))
+                break
+            fw.write(sn)
+    sd.send(b'ok')          # 收到完整文件后确认
+    sd.close()
+            
 
 
 
@@ -1546,6 +1580,7 @@ if __name__ == '__main__':
         sm = random.randint(1024,65535)
         if not is_port_in_use(sm):
             break
+    sm = 7060
     print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
     logging.info(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}")
     s = Thread(target=w, daemon=True,args=(sm,))
