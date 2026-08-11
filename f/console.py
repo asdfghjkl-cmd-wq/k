@@ -20,7 +20,7 @@ def update(ip,port):
         with tqdm.tqdm(total=size) as dd:
             with open(fil, 'rb') as d:
                 while True:
-                    data = d.read(2048)
+                    data = d.read(8192)
                     if not data:
                         break
                     ac.send(data)

@@ -235,6 +235,8 @@ logging.basicConfig(
     encoding="utf-8"
 )
 
+
+
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
@@ -1549,7 +1551,7 @@ def update_file(ip, sm):
     a.listen(1)
     sd, addr = a.accept()
     try:
-        md = sd.recv(1024).decode()
+        md = sd.recv(8192).decode()
         file_name, file_size = md.split(";")
         file_size = int(file_size)
         sd.send(b"ok")  # 发送确认
