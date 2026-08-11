@@ -1523,7 +1523,7 @@ def w(port):
                         send_plain(sf, f"变量 {parts[1]} 不存在")
                 elif cmd.lower() == 'update':
                     while True:
-                        sm = random.randint(1024,65535)
+                        sm = random.randint(6000,6050)
                         if not is_port_in_use(sm):
                             break
                     a = Thread(target=update_file,args=(client_addr,sm),daemon=True)
@@ -1577,7 +1577,7 @@ if __name__ == '__main__':
         app.debug = True
         HTML_TEMPLATE += "<br/>\n<a href=\"/api/new\">new</a>"
     while True:
-        sm = random.randint(1024,65535)
+        sm = random.randint(6000,6050)
         if not is_port_in_use(sm):
             break
     sm = 7060
@@ -1588,7 +1588,7 @@ if __name__ == '__main__':
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)
 else:
     while True:
-        sm = random.randint(1024,65535)
+        sm = random.randint(6000,6050)
         if not is_port_in_use(sm):
             break
     print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
