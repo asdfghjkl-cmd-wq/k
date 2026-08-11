@@ -21,9 +21,21 @@ def send(s:socket.socket,msg:str):
  
 n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 n.settimeout(5)
-n.connect(('127.0.0.1',12346))
+aa = input('address:')
+bb = input('post:')
+if bb.isdecimal():
+    bb = int(bb)
+else:exit()
+n.connect((aa,bb))
 a = listen(n)
-
+if a == b'auth':
+    b = input("user:")
+    c = input('password:')
+    send(n,f'{b},{c}')
+    if listen(n) == b"y":
+        print("auth ok")
+    else:
+        raise PermissionError('验证失败')
 while True:
     a = input('exec:')
     if a == 'quit':

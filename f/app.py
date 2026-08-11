@@ -8,6 +8,14 @@
 5. 引入 CSRF 保护（Flask-WTF）。
 """
 #f
+import psutil
+
+def is_port_in_use(port):
+    for conn in psutil.net_connections():
+        if conn.laddr.port == port and conn.status == "LISTEN":
+            return True
+    return False
+
 true=True
 import hashlib
 from math import fabs
@@ -1304,14 +1312,14 @@ def create_file(filename):
 
 
 
-def w():
+def w(port):
     global admin,users
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.bind(('127.0.0.1',12346))
+    s.bind(('0.0.0.0',port))
     s.listen(1)
     time.sleep(1)
     while True:
-        print('aaa',flush=False)
+        print('aaa',flush=true)
         login_r = False
         sf,m = s.accept()
         print("m",flush=True)
@@ -1384,7 +1392,7 @@ def w():
                     if len(n) == 3:
                         username = n[1]
                         password = n[2]
-                        users[username] = hashlib.sha256(password.encode())
+                        users[username] = generate_password_hash(password)
                         user_list.append(username)
                         send(sf,f"用户 {username} 已添加")
                         save_user()
@@ -1496,10 +1504,15 @@ if __name__ == "__main__":
     import keyboard
     keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
 if __name__ == '__main__':
-    print(f"🌐 启动：http://0.0.0.0:5000\n访问http://127.0.0.1:5000", flush=True)
+    print(f"🌐 启动：http://0.0.0.0:5000\n访问http://{socket.gethostbyname(socket.gethostname())}:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
         app.debug = True
         HTML_TEMPLATE += "<br/>\n<a href=\"/api/new\">new</a>"
-    s = Thread(target=w, daemon=True)
+    while True:
+        sm = random.randint(1024,65535)
+        if not is_port_in_use(sm):
+            break
+    print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
+    s = Thread(target=w, daemon=True,args=(sm,))
     s.start()
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)

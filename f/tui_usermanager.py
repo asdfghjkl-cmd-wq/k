@@ -26,80 +26,31 @@ class ServerAPI:
     """包含登录与管理 socket 二次验证"""
 
     def __init__(self, base_url: str):
-        self.base_url = base_url.rstrip("/")
+        a = base_url.removeprefix('http://').split(':')
+        self.address = a[0]
+        self.port = a[1]
+        if self.port.isdecimal():self.port = int(self.port)
+        else:raise ValueError('post not is int')
         self.session = requests.Session()
         self.csrf_token: Optional[str] = None
         self.logged_in = False
         self.username: Optional[str] = None
         self.sock: Optional[socket.socket] = None  # 延迟到登录成功后创建
 
-    def _extract_csrf_from_html(self, html: str) -> Optional[str]:
-        match = re.search(r'name="csrf_token"\s+value="([^"]+)"', html)
-        return match.group(1) if match else None
-
-    def get_csrf_from_page(self) -> bool:
-        try:
-            resp = self.session.get(f"{self.base_url}/login")
-            if resp.status_code == 200:
-                token = self._extract_csrf_from_html(resp.text)
-                if token:
-                    self.csrf_token = token
-                    return True
-            return False
-        except RequestException:
-            return False
+    
 
     def login(self, username: str, password: str) -> tuple[bool, str]:
-        if not self.csrf_token:
-            if not self.get_csrf_from_page():
-                return False, "无法获取 CSRF Token，请检查服务器连接"
-
-        data = {
-            "username": username,
-            "password": password,
-            "csrf_token": self.csrf_token
-        }
-        try:
-            resp = self.session.post(
-                f"{self.base_url}/login",
-                data=data,
-                allow_redirects=False
-            )
-        except RequestException as e:
-            return False, str(e)
-
-        if resp.status_code == 302 and resp.headers.get("Location", "").startswith("/"):
-            self.logged_in = True
-            self.username = username
-            try:
-                home_resp = self.session.get(f"{self.base_url}/")
-                new_token = self._extract_csrf_from_html(home_resp.text)
-                if new_token:
-                    self.csrf_token = new_token
-            except RequestException:
-                pass
-
-            # 登录成功后，连接管理 socket 并验证
-            result, msg = self._connect_and_verify(username, password)
-            if not result:
-                self.logged_in = False
-                self.sock = None
-                return False, msg
-            return True, "登录成功"
-        elif resp.status_code == 200 and "用户名或密码错误" in resp.text:
-            new_token = self._extract_csrf_from_html(resp.text)
-            if new_token:
-                self.csrf_token = new_token
-            return False, "用户名或密码错误"
-        else:
-            return False, f"未知错误 (HTTP {resp.status_code})"
+        a,b =self._connect_and_verify(username,password)
+        with open('a.log','w') as d:
+            print(a,',',b,file=d)
+        return a,b
 
     def _connect_and_verify(self, username: str, password: str) -> tuple[bool, str]:
         """连接管理 socket 并执行二次验证"""
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.settimeout(5)
-            self.sock.connect(("127.0.0.1", 12346))
+            self.sock.connect((self.address,self.port))
         except Exception as e:
             return False, f"无法连接管理端口: {e}"
 
@@ -107,7 +58,7 @@ class ServerAPI:
             # 1. 接收服务器发送的 'auth'
             auth_challenge = self._recv_until_delimiter()
             if auth_challenge != b"auth":
-                return False, "服务器未发送 auth 挑战"
+                return True,'无需登录'
 
             # 2. 发送用户名和密码
             self.sock.sendall(f"{username},{password}".encode() + b"</s>")
@@ -184,7 +135,7 @@ class LoginScreen(Screen):
         yield Header(show_clock=True)
         yield Vertical(
             Static("登录到用户管理", classes="title"),
-            Input(placeholder="服务器地址 (例: http://localhost:5000)", id="url"),
+            Input(placeholder="服务器地址 (例: localhost:5000)", id="url"),
             Input(placeholder="管理员用户名", id="user"),
             Input(placeholder="密码", password=True, id="pass"),
             Button("登录", id="login_btn", variant="primary"),
@@ -194,7 +145,7 @@ class LoginScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.query_one("#url").value = "http://localhost:5000"
+        self.query_one("#url").value = "localhost:5000"
 
     @work
     async def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -220,7 +171,7 @@ class UserManageScreen(Screen):
     CSS = """
     #user_mgr_container {
         width: 70%;
-        max-width: 80;
+        max-width: 100;
         min-height: 24;
         background: $surface;
         border: thick $primary;
