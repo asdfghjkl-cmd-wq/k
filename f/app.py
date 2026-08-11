@@ -1546,13 +1546,13 @@ def update_file(ip,sm):
     print(f'启动上传:{sm}   {str(ip[0])}',flush=True)
     a = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     
-    a.bind((str(ip[0]),sm))
+    a.bind(("0.0.0.0",sm))
     a.listen(1)
     sd,m = a.accept()
     md =sd.recv(1024).decode()
-    file = md.split(";")[0]
+
     sd.send(b"ok")
-    with open(os.path.join(UPLOAD_DIR, file), 'wb') as fw:
+    with open(os.path.join(UPLOAD_DIR, md), 'wb') as fw:
         while True:
             sn = sd.recv(2048)
             if not sn:          # 连接关闭

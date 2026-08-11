@@ -1,6 +1,7 @@
 import os
 import socket
 import struct
+import tqdm
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 
@@ -11,15 +12,18 @@ def update(ip,port):
     if os.path.isfile(fil):
         name = os.path.basename(fil)
         size = os.path.getsize(fil)
-        n:str = name+";"+str(size)
-        ac.send(n.encode())
+
+        ac.send(name.encode())
         ac.recv(10)
         with open(fil,'rb') as d:
-            while True:
-                n =d.read(2048)
-                if not n:
-                    break
-                ac.send(n)
+            with tqdm.tqdm(total=size) as p:
+                while True:
+
+                    n =d.read(2048)
+                    if not n:
+                        break
+                    ac.send(n)
+                    p.update(2048)
         
     ac.sendall(b'\0')
     ac.shutdown(socket.SHUT_WR)   # 告诉对方我已写完
