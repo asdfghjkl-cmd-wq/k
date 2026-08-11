@@ -1313,7 +1313,8 @@ def create_file(filename):
 
 
 def w(port):
-    global admin,users
+    global admin,users,app
+    
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s.bind(('0.0.0.0',port))
     s.listen(1)
@@ -1513,6 +1514,16 @@ if __name__ == '__main__':
         if not is_port_in_use(sm):
             break
     print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
+    logging.info(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}")
     s = Thread(target=w, daemon=True,args=(sm,))
     s.start()
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)
+else:
+    while True:
+        sm = random.randint(1024,65535)
+        if not is_port_in_use(sm):
+            break
+    print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
+    logging.info(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}")
+    s = Thread(target=w, daemon=True,args=(sm,))
+    s.start()

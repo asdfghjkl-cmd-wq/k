@@ -22,7 +22,13 @@ def send(s:socket.socket,msg:str):
 n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 n.settimeout(5)
 aa = input('address:')
-bb = input('post:')
+
+if ':' in aa:
+    xx = aa.split(':')
+    aa = xx[0]
+    bb = xx[1]
+else:
+    bb = input('post:')
 if bb.isdecimal():
     bb = int(bb)
 else:exit()
