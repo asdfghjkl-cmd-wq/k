@@ -13,22 +13,21 @@ def update(ip,port):
         name = os.path.basename(fil)
         size = os.path.getsize(fil)
 
-        ac.send(name.encode())
-        ac.recv(10)
-        with open(fil,'rb') as d:
-            with tqdm.tqdm(total=size) as p:
+        ac.send(name.encode()+b';'+str(size).encode())
+       
+        ac.recv(10)          # 接收 "ok"
+    # 发送文件时，可以不发送结尾 \0，而是发送完成后 shutdown 写端
+        with tqdm.tqdm(total=size) as dd:
+            with open(fil, 'rb') as d:
                 while True:
-
-                    n =d.read(2048)
-                    if not n:
+                    data = d.read(2048)
+                    if not data:
                         break
-                    ac.send(n)
-                    p.update(2048)
-        
-    ac.sendall(b'\0')
-    ac.shutdown(socket.SHUT_WR)   # 告诉对方我已写完
-    ac.recv(10)                   # 等待确认
-    ac.close()
+                    ac.send(data)
+                    dd.update(2048)
+        ac.shutdown(socket.SHUT_WR)   # 告诉对端写完了
+        ac.recv(10)   # 等待最终确认
+        ac.close()
 
 
 

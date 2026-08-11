@@ -1541,28 +1541,41 @@ def w(port):
         # 连接关闭后继续等待新连接
 
 
-def update_file(ip,sm):
-
-    print(f'启动上传:{sm}   {str(ip[0])}',flush=True)
-    a = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    
-    a.bind(("0.0.0.0",sm))
+def update_file(ip, sm):
+    # 直接绑定 0.0.0.0 避免地址错误
+    a = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    a.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    a.bind(('0.0.0.0', sm))
     a.listen(1)
-    sd,m = a.accept()
-    md =sd.recv(1024).decode()
+    sd, addr = a.accept()
+    try:
+        md = sd.recv(1024).decode()
+        file_name, file_size = md.split(";")
+        file_size = int(file_size)
+        sd.send(b"ok")  # 发送确认
 
-    sd.send(b"ok")
-    with open(os.path.join(UPLOAD_DIR, md), 'wb') as fw:
-        while True:
-            sn = sd.recv(2048)
-            if not sn:          # 连接关闭
-                break
-            if sn.endswith(b'\0'):
-                fw.write(sn.removesuffix(b'\0'))
-                break
-            fw.write(sn)
-    sd.send(b'ok')          # 收到完整文件后确认
-    sd.close()
+        received = 0
+        file_path = os.path.join(UPLOAD_DIR, file_name)
+        with open(file_path, 'wb') as fw:
+            while received < file_size:
+                data = sd.recv(min(2048, file_size - received))
+                if not data:
+                    break
+                # 处理末尾的 \0
+                if received + len(data) >= file_size:
+                    # 可能是最后一块数据，包含 \0
+                    # 简单做法：不发送 \0，靠长度判断结束
+                    if data.endswith(b'\0'):
+                        data = data.removesuffix(b'\0')
+                fw.write(data)
+                received += len(data)
+        sd.send(b'ok')   # 发送成功确认
+    except Exception as e:
+        print(f"上传错误: {e}", flush=True)
+        # 可以向客户端发送错误信息
+    finally:
+        sd.close()
+        a.close()
             
 
 
