@@ -362,13 +362,17 @@ def isa(f):
 
 
 def safe_path(*parts):
+    # 无参数或仅传入 '.' 时，直接返回上传根目录
+    if not parts or (len(parts) == 1 and parts[0] == '.'):
+        return UPLOAD_DIR
+
     target = os.path.abspath(os.path.join(UPLOAD_DIR, *parts))
     target = os.path.realpath(target)
     print(target)
     if sys.platform.startswith('win'):
         if not target.lower().startswith(os.path.abspath(UPLOAD_DIR).lower()):
             raise ValueError("路径越权")
-    else: 
+    else:
         if not target.startswith(os.path.abspath(UPLOAD_DIR)):
             raise ValueError("路径越权")
     return target
