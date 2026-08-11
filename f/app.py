@@ -8,6 +8,7 @@
 5. 引入 CSRF 保护（Flask-WTF）。
 """
 #f
+
 import psutil
 
 def is_port_in_use(port):
@@ -42,7 +43,8 @@ from functools import wraps
 ascii_lowercase += "0123456789"
 import tempfile
 from flask_wtf.csrf import CSRFProtect, CSRFError
-
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 # 禁用不安全的请求警告（针对 verify=False）
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -1312,192 +1314,223 @@ def create_file(filename):
 
 
 
+# ==================== 服务器控制台（修复版） ====================
+import struct
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+
+def recv_exact(sock, n):
+    """精确接收 n 字节数据"""
+    data = b''
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data += packet
+    return data
+
+def listen_encrypted(sock, private_key):
+    """
+    接收 长度(4字节大端) + 密文，用私钥解密
+    返回明文字节串
+    """
+    raw_len = recv_exact(sock, 4)
+    if raw_len is None:
+        return b""
+    length = struct.unpack('>I', raw_len)[0]
+    encrypted = recv_exact(sock, length)
+    if encrypted is None:
+        return b""
+    cipher = PKCS1_OAEP.new(private_key)
+    return cipher.decrypt(encrypted)
+
+def send_plain(sock, msg: str):
+    """明文发送字符串，末尾加换行符"""
+    sock.sendall((msg + '\0').encode())
+
 def w(port):
-    global admin,users,app
-    
-    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.bind(('0.0.0.0',port))
+    global admin, users, app
+    private_key = RSA.generate(1024)          # 认证用，注意1024位密钥OAEP最大明文约86字节
+    public_key = private_key.publickey()
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', port))
     s.listen(1)
     time.sleep(1)
+
     while True:
-        print('aaa',flush=true)
+        print('等待管理连接...', flush=True)
         login_r = False
-        sf,m = s.accept()
-        print("m",flush=True)
+        sf, client_addr = s.accept()
+        print(f"新连接来自 {client_addr}", flush=True)
+
         try:
-            
-            send(sf,'auth')
-            a = listen(sf).decode()
-            
-            nm = a.split(',')
-            if nm[0] == admin:
-                if check_password_hash(users[nm[0]],nm[1]):
-                    send(sf,"y")
-                    print('auth ok',flush=true)
-                    login_r = True
-                else:
-                    print(nm,flush=True)
-                    send(sf,"n")
-                    sf.close()
+            # 1. 发送公钥（长度前缀 + 公钥数据）
+            pub_bytes = public_key.export_key()
+            sf.sendall(struct.pack('>I', len(pub_bytes)))
+            sf.sendall(pub_bytes)
+
+            # 2. 接收并解密认证信息
+            encrypted_auth = listen_encrypted(sf, private_key)
+            auth_str = encrypted_auth.decode()
+            nm = auth_str.split(',')
+
+            if nm[0] == admin and check_password_hash(users.get(nm[0], ''), nm[1]):
+                send_plain(sf, "y")
+                print('认证成功', flush=True)
+                login_r = True
             else:
-                print(nm,flush=True)
-                send(sf,"n")
+                print(f"认证失败: {nm}", flush=True)
+                send_plain(sf, "n")
                 sf.close()
         except Exception as e:
             traceback.print_exc()
-            send(sf,"er")
-        
-        while True:
-            if not login_r:
-                break
-            
-
-            a = listen(sf).decode()
-            if a == "":
-                break
-            print(a,flush=True)
-            logging.info(f"exec:{a.split(" ")[0:2]}")
-            
             try:
-                if a == "</c>":
+                send_plain(sf, "er")
+            except:
+                pass
+            sf.close()
+            continue
+
+        # 命令处理循环
+        while login_r:
+            try:
+                # 接收加密的命令
+                encrypted_cmd = listen_encrypted(sf, private_key)
+                if not encrypted_cmd:
+                    break
+                cmd = encrypted_cmd.decode()
+                print(f"命令: {cmd}", flush=True)
+                logging.info(f"exec: {cmd.split(' ')[0:2]}")
+
+                if cmd == "</c>":
+                    send_plain(sf, "bye")
                     sf.shutdown(socket.SHUT_RDWR)
                     sf.close()
                     break
-                if a == "exit" or a == "\\" or a == "q":
-                    for a in task_store.keys():
-                        task_store[a].get("cancel_event","").set()
+                if cmd in ("exit", "\\", "q"):
+                    for task in task_store.values():
+                        task.get("cancel_event", Event()).set()
                     os._exit(0)
-                elif a.lower().startswith("ls"):
-                    sss = generate_tree(os.path.join(BASE_DIR,"uploads",a.replace("ls","").strip()))
-                    send(sf,sss)
-                elif a == "load":
+                elif cmd.lower().startswith("ls"):
+                    path_part = cmd.replace("ls", "", 1).strip()
+                    tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part))
+                    send_plain(sf, tree)
+
+                elif cmd == "load":
                     load_html()
-                    send(sf,"load ok")
-                elif a.lower().startswith('debug'):
-                    ddd = a.lower().replace("debug","").strip()
+                    send_plain(sf, "load ok")
+                elif cmd.lower().startswith('debug'):
+                    ddd = cmd.lower().replace("debug", "").strip()
                     if ddd == "open":
-                        create_file(os.path.join(BASE_DIR,"de.lock"))
+                        create_file(os.path.join(BASE_DIR, "de.lock"))
                         app.debug = True
-
                     elif ddd == "close":
-                        if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
-                            os.remove(os.path.join(BASE_DIR,"de.lock"))
+                        if os.path.exists(os.path.join(BASE_DIR, "de.lock")):
+                            os.remove(os.path.join(BASE_DIR, "de.lock"))
                         app.debug = False
-                    send(sf, f"debug mode {'open' if app.debug else 'close'} ok")
+                    send_plain(sf, f"debug mode {'open' if app.debug else 'close'} ok")
 
-                elif a.lower().startswith("adduser"):
-                    n = a.split(" ")
-                    for i in range(len(n)):
-                        if n[i] == "":
-                            n.pop(i)
-                    if len(n) == 3:
-                        username = n[1]
-                        password = n[2]
+                elif cmd.lower().startswith("adduser"):
+                    parts = [p for p in cmd.split() if p]
+                    if len(parts) == 3:
+                        username, password = parts[1], parts[2]
                         users[username] = generate_password_hash(password)
                         user_list.append(username)
-                        send(sf,f"用户 {username} 已添加")
+                        send_plain(sf, f"用户 {username} 已添加")
                         save_user()
-                elif a.lower().startswith("deluser"):
-                    n = a.split(" ")
-                    for i in range(len(n)):
-                        if n[i] == "":
-                            n.pop(i)
-                    if len(n) == 2:
-                        username = n[1]
+                    else:
+                        send_plain(sf,f'error,{username} in not found')
+
+                elif cmd.lower().startswith("deluser"):
+                    parts = [p for p in cmd.split() if p]
+                    if len(parts) == 2:
+                        username = parts[1]
                         if username in users and username in user_list:
                             del users[username]
                             user_list.remove(username)
-                            send(sf,f"用户 {username} 已删除")
+                            send_plain(sf, f"用户 {username} 已删除")
                             save_user()
-                        if username in users and username in nigga_list:
-                                del users[username]
-                                nigga_list.remove(username)
-                                send(sf,f"用户 {username} 已删除")
-                                save_user()
-
-                elif a.lower().startswith("listuser"):
-                    
-                    an = []
-                    an.append("当前用户列表:")
-                    for user in users.keys():
-                        a = ""
-                        if user in nigga_list:a += " forbid"
-                        elif user in user_list:a += " authorized"
-                 
-                        else:user_list.append(user);a += " authorized"
-                        if user == admin:a += " admin"
-                        an.append(f"--{user} {a}")
-                    send(sf,"\n".join(an))
-                    save_user()
-                
-                elif a.lower().startswith("addnigga"):
-                    n = a.split(" ")
-                    for i in range(len(n)):
-                        if n[i] == "":
-                            n.pop(i)
-                        if len(n) == 2:
-                            username = n[1]
-                            if username not in users:
-                                send(sf,f"{username}不存在")
-                            elif username not in nigga_list:
-                                nigga_list.append(username)
-                                user_list.remove(username)
-                                send(sf,f"用户 {username} 已移入黑名单")
-                                save_user()
-                elif a.lower().startswith("delnigga"):
-                    n = a.split(" ")
-                    for i in range(len(n)):
-                        if n[i] == "":
-                            n.pop(i)
-                    if len(n) == 2:
-                        username = n[1]
-                        if username not in users:
-                            send(sf,f"{username}不存在")
-                        elif username not in user_list:
+                        elif username in users and username in nigga_list:
+                            del users[username]
                             nigga_list.remove(username)
-                            user_list.append(username)
-                            send(sf,f"用户 {username} 已移出黑名单")
+                            send_plain(sf, f"用户 {username} 已删除")
                             save_user()
-                elif a.lower().startswith("setadmin"):
-                    n = a.split(" ")
-                    for i in range(len(n)):
-                        if n[i] == "":
-                            n.pop(i)
-                    if len(n) == 2:
-                        username = n[1]
-                        if username not in users:
-                            send(sf,f"{username}不存在")
-                        elif username in user_list :
-                            admin = username
-                            send(sf,f"用户 {username} 已设为管理员")
-                            save_user()
-                elif app.debug and a.lower().startswith("get") :
-                    n = a.split(" ")
-                    send(sf,str(globals()[n[1]]))
+                        else:
+                            send_plain(sf, "用户不存在")
 
-                else: send(sf,"not found")
+                elif cmd.lower().startswith("listuser"):
+                    info = ["当前用户列表:"]
+                    for user in users.keys():
+                        role = ""
+                        if user in nigga_list:
+                            role += " forbid"
+                        else:
+                            if user not in user_list:
+                                user_list.append(user)
+                            role += " authorized"
+                        if user == admin:
+                            role += " admin"
+                        info.append(f"--{user} {role}")
+                    send_plain(sf, "\n".join(info))
+                    save_user()
+
+                elif cmd.lower().startswith("addnigga"):
+                    parts = [p for p in cmd.split() if p]
+                    if len(parts) == 2:
+                        username = parts[1]
+                        if username not in users:
+                            send_plain(sf, f"{username} 不存在")
+                        elif username not in nigga_list:
+                            nigga_list.append(username)
+                            if username in user_list:
+                                user_list.remove(username)
+                            send_plain(sf, f"用户 {username} 已移入黑名单")
+                            save_user()
+
+                elif cmd.lower().startswith("delnigga"):
+                    parts = [p for p in cmd.split() if p]
+                    if len(parts) == 2:
+                        username = parts[1]
+                        if username not in users:
+                            send_plain(sf, f"{username} 不存在")
+                        elif username in nigga_list:
+                            nigga_list.remove(username)
+                            if username not in user_list:
+                                user_list.append(username)
+                            send_plain(sf, f"用户 {username} 已移出黑名单")
+                            save_user()
+
+                elif cmd.lower().startswith("setadmin"):
+                    parts = [p for p in cmd.split() if p]
+                    if len(parts) == 2:
+                        username = parts[1]
+                        if username not in users:
+                            send_plain(sf, f"{username} 不存在")
+                        elif username in user_list:
+
+                            admin = username
+                            send_plain(sf, f"用户 {username} 已设为管理员")
+                            save_user()
+
+                elif app.debug and cmd.lower().startswith("get"):
+                    parts = cmd.split()
+                    try:
+                        send_plain(sf, str(globals()[parts[1]]))
+                    except KeyError:
+                        send_plain(sf, f"变量 {parts[1]} 不存在")
+                else:
+                    send_plain(sf, "未知命令")
             except Exception as e:
                 traceback.print_exc()
-                logging.error(f"exec error:{str(e)}")
-                send(sf, f"error: {e}")
-            except (KeyboardInterrupt,EOFError):
-                os._exit(0)
+                logging.error(f"命令执行错误: {e}")
+                try:
+                    send_plain(sf, f"error: {e}")
+                except:
+                    break
+        # 连接关闭后继续等待新连接
 
-def listen(s:socket.socket):
-    sn = b""
-    while True:
-        snb = s.recv(1024)
-        if snb == b"":
-            return b""
-        if snb.endswith(b"</s>"):
-            sn += snb.replace(b"</s>",b"")
 
-            return sn
-        sn += snb
-
-def send(s:socket.socket,msg:str):
-    s.send(msg.encode())
-    s.send(b"</s>")
 
 
 

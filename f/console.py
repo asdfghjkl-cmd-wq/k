@@ -1,28 +1,10 @@
-import os
 import socket
-import subprocess
-import time
-a = os.path.abspath(os.path.dirname(__file__))
-def listen(s:socket.socket):
-    sn = b""
-    while True:
-        snb = s.recv(1024)
-        if snb == b"":
-            return b""
-        if snb.endswith(b"</s>"):
-            sn += snb.replace(b"</s>",b"")
+import struct
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
-            return sn
-        sn += snb
-
-def send(s:socket.socket,msg:str):
-    s.send(msg.encode())
-    s.send(b"</s>")
- 
-n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-n.settimeout(5)
-aa = input('address:')
-
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+aa = input("address:")
 if ':' in aa:
     xx = aa.split(':')
     aa = xx[0]
@@ -32,25 +14,42 @@ else:
 if bb.isdecimal():
     bb = int(bb)
 else:exit()
-n.connect((aa,bb))
-a = listen(n)
-if a == b'auth':
-    b = input("user:")
-    c = input('password:')
-    send(n,f'{b},{c}')
-    if listen(n) == b"y":
-        print("auth ok")
-    else:
-        raise PermissionError('验证失败')
-while True:
-    a = input('exec:')
-    if a == 'quit':
-        break
-    if a == 'exit':
-        send(n,a)
-        exit()
+sock.connect((aa,bb))
 
-    send(n,a)
-    a = listen(n).decode()
-    print(a)
-send(n,'</c>')
+# 1. 接收公钥长度 + 公钥数据
+raw_len = sock.recv(4)
+pub_len = struct.unpack('>I', raw_len)[0]
+pub_bytes = b''
+while len(pub_bytes) < pub_len:
+    pub_bytes += sock.recv(pub_len - len(pub_bytes))
+public_key = RSA.import_key(pub_bytes)
+
+# 2. 加密并发送认证信息
+n = input('user:')
+p = input('password:')
+cipher = PKCS1_OAEP.new(public_key)
+auth_data = f'{n},{p}'.encode()   # 注意长度不能超过86字节
+enc = cipher.encrypt(auth_data)
+sock.sendall(struct.pack('>I', len(enc)) + enc)
+
+# 3. 接收服务器的明文回复（以换行结束）
+response = b''
+while True:
+    ch = sock.recv(1)
+    if ch == b'\0' or not ch:
+        break
+    response += ch
+print('认证结果:', response.decode())
+
+# 4. 后续命令同样加密发送，明文接收回复
+while True:
+    cmd = input('> ')
+    enc_cmd = cipher.encrypt(cmd.encode())
+    sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)
+    resp = b''
+    while True:
+        ch = sock.recv(1)
+        if ch == b'\0' or not ch:
+            break
+        resp += ch
+    print(resp.decode())
