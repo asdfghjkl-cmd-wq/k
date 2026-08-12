@@ -25,7 +25,7 @@ from math import fabs
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
-
+from filelock import FileLock
 import zipfile, requests,pyzipper
 from threading import Thread
 from queue import Queue
@@ -1710,8 +1710,7 @@ def update_file(ip, sm):
         sd.close()
         a.close()
             
-
-
+a = FileLock(os.path.join(BASE_DIR,'pro.lock'))
 
 
 if __name__ == "__main__":
@@ -1733,11 +1732,20 @@ if __name__ == '__main__':
     s.start()
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)
 else:
-    while True:
-        sm = random.randint(6000,6050)
-        if not is_port_in_use(sm):
-            break
-    print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
-    logging.info(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}")
-    s = Thread(target=w, daemon=True,args=(sm,))
-    s.start()
+
+    try:
+        a.acquire(timeout=0)          # a 是你上面创建的 FileLock 对象
+    except Exception:                 # 拿不到锁说明别的 worker 已经启动了管理服务
+        print("[Worker] 管理端口已由其他 worker 负责，本进程跳过。", flush=True)
+    else:
+        # 本 worker 抢到了锁，负责启动管理端口
+        while True:
+            sm = random.randint(6000, 6050)
+            if not is_port_in_use(sm):
+                break
+        sm = 7060                     # 你最终强制使用的端口，建议直接固定
+        print(f"管理端口链接: {socket.gethostbyname(socket.gethostname())}:{sm}", flush=True)
+        logging.info(f"管理端口链接: {socket.gethostbyname(socket.gethostname())}:{sm}")
+
+        s = Thread(target=w, daemon=True, args=(sm,))
+        s.start()
