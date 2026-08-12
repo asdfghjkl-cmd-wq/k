@@ -79,7 +79,8 @@ while True:
     cmd = input('> ')
     if cmd == 'quit':
         exit(0)
-    
+    if cmd == "":
+        cmd = "k"
 
     enc_cmd = cipher.encrypt(cmd.encode())
     sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)

@@ -25,7 +25,7 @@ from math import fabs
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
-import magic
+
 import zipfile, requests,pyzipper
 from threading import Thread
 from queue import Queue
@@ -58,7 +58,7 @@ REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 REDIS_DB = int(os.environ.get('REDIS_DB', 0))
 
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
-
+print(r.info('server')['redis_version'],flush=True)
 class qe(BaseException):
     pass
 
@@ -77,7 +77,7 @@ def get_filename_from_url(url):
 
 class tool:
     class u1:
-        def call(source_path,chunk_size,output_dir,task_id,cancel_event):
+        def call(source_path,chunk_size,output_dir,task_id,cancel_check):
             if os.path.exists(output_dir):
                 if os.path.isdir(output_dir):
                         shutil.rmtree(output_dir)
@@ -88,7 +88,7 @@ class tool:
             file_count = 0
             with open(source_path, "rb") as src:
                 while True:
-                    if cancel_event():
+                    if cancel_check():
                         shutil.rmtree(output_dir)
                         raise qe("cancel")
                     data = src.read(chunk_size)
@@ -110,7 +110,7 @@ class tool:
 
 
     class u2:
-        def call(dir,tdir,task_id,cancel_event):
+        def call(dir,tdir,task_id,cancel_check):
             file = open(os.path.join(dir,"file"),"r",encoding="utf-8")
             n = os.path.basename(file.readline().replace("\n",""))
  
@@ -118,7 +118,7 @@ class tool:
             file.close()
             bn = open(os.path.join(tdir,n),"wb")
             for nb in range(1,x+1):
-                if cancel_event():
+                if cancel_check():
                     os.remove(bn.name)
                     raise qe("cancel")
                 an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb")
@@ -208,7 +208,7 @@ def worker():
             elif a:
                 r.hset(task_key(task_id), 'status', 'finished')
             else:
-                r.hset(task_key(task_id), 'status', 'failed')
+                r.hset(task_key(task_id), 'status', 'failed;')
 
         except Exception as e:
             traceback.print_exc()
@@ -287,9 +287,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(META_DIR, exist_ok=True)
 os.makedirs(CHUNK_DIR, exist_ok=True)
 share_dict = dict()
-name = ran_str(4)
-password = ran_str(8)
-print("name:", name, "\n", "password:", password, "\n", flush=True)
+
 
 # 任务数据用 Hash 存储，键为 task:<task_id>
 TASK_PREFIX = "task:"
@@ -348,6 +346,21 @@ def cancel_task_by_id(task_id):
     r.hset(task_key(task_id), 'cancel_flag', '1')
     return True
 
+def load_redis():
+    global user_list,users,nigga_list,admin
+    while True:
+        time.sleep(10)
+        redis_users = r.hgetall("users")
+        redis_user_list = list(r.smembers("user_list"))
+        redis_nigga_list = list(r.smembers("nigga_list"))
+        redis_admin = r.get("admin")
+        ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', os.environ.get('a', None))
+        if redis_users:
+            users = redis_users
+            user_list = redis_user_list
+            nigga_list = redis_nigga_list
+            admin = redis_admin if redis_admin else ADMIN_USERNAME
+
 def update_task_progress(task_id, total=None, current=None):
     """更新任务进度（下载等场景）"""
     key = task_key(task_id)
@@ -363,16 +376,18 @@ def update_task_progress(task_id, total=None, current=None):
     r.hset(key, 'progress', json.dumps(progress))
 
 users,user_list,nigga_list,admin = load_user()
+annn = Thread(target=load_redis,daemon=True)
+annn.start()
 # ==================== 全局 HTML 模板 ====================
 HTML_TEMPLATE = ""
 
-def get_hash(path,task_id,cancel_event):
+def get_hash(path,task_id,cancel_check):
     task_id = task_id
     n = hashlib.sha256()
     with open(path,'rb') as b:
         for chunk in iter(lambda: b.read(1024*1024*10), b''):
             n.update(chunk)
-            if cancel_event.is_set():
+            if cancel_check():
                 raise qe("cancel")
 
     return True,str(n.hexdigest())
@@ -532,7 +547,7 @@ def get_meta_path(rel_path):
         meta_dir = meta_base
     return os.path.join(meta_dir, os.path.basename(rel_path) + '.json')
 
-def sze(file,od,password):
+def sze(file,od,password,task_id):
     zp = safe_path(file)
     if not os.path.isfile(zp):
         raise FileNotFoundError(f"not found:{zp}")
@@ -556,7 +571,7 @@ def sze(file,od,password):
         raise ValueError("解压目标路径越权")
     os.makedirs(target_dir, exist_ok=True)
     try:
-        a = pro(target=sece,args=(zp,target_dir,file,password),daemon=True)
+        a = pro(target=sece,args=(zp,target_dir,file,password,task_id),daemon=True)
         return True,a,target_dir
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
@@ -564,21 +579,24 @@ def sze(file,od,password):
             os.rmdir(target_dir)
         return False,None,target_dir
 
-def sece(zp,target_dir,file,password):
-    with SevenZipFile(zp,mode="r",password=password) as df:
-        for member in df.list():
-    
-            member_path = os.path.realpath(os.path.join(target_dir, member.filename))
-            if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
-                raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-        df.extractall(target_dir)
-        app.logger.info(f"解压完成: {file} -> {target_dir}")
+def sece(zp,target_dir,file,password,task_id):
+    try:
+        with SevenZipFile(zp,mode="r",password=password) as df:
+            for member in df.list():
+                
+                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+            df.extractall(target_dir)
+            app.logger.info(f"解压完成: {file} -> {target_dir}")
+    except Exception as e:
+        save_task(task_id,{'error':str(e)})
 
 
 
 
 
-def zipe(file: str, dir,password):
+def zipe(file: str, dir,password,task_id):
     """解压 ZIP 文件，并防止 Zip Slip 攻击"""
     zip_path = safe_path(file)
     if not os.path.isfile(zip_path):
@@ -608,8 +626,8 @@ def zipe(file: str, dir,password):
     os.makedirs(target_dir, exist_ok=True)
     try:
         if password == "":
-            a =pro(target=zce,args=(zip_path,target_dir,file),daemon=True)
-        else:a =pro(target=zece,args=(zip_path,target_dir,file,password.encode()),daemon=True)
+            a =pro(target=zce,args=(zip_path,target_dir,file,task_id),daemon=True)
+        else:a =pro(target=zece,args=(zip_path,target_dir,file,password.encode(),task_id),daemon=True)
         return True,a,target_dir
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
@@ -617,28 +635,32 @@ def zipe(file: str, dir,password):
             os.rmdir(target_dir)
         return False,None,target_dir
 
-def zce(zip_path,target_dir,file):
+def zce(zip_path,target_dir,file,task_id):
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zf:
 
-    with zipfile.ZipFile(zip_path, 'r') as zf:
+            for member in zf.infolist():
+                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+            zf.extractall(target_dir)
+        app.logger.info(f"解压完成: {file} -> {target_dir}")
+    except Exception as e:
+        save_task(task_id,{'error':str(e)})
 
-        for member in zf.infolist():
-            member_path = os.path.realpath(os.path.join(target_dir, member.filename))
-            if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
-                raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-        zf.extractall(target_dir)
-    app.logger.info(f"解压完成: {file} -> {target_dir}")
+def zece(zip_path,target_dir,file,password,task_id):
+    try:
+        with pyzipper.AESZipFile(zip_path, 'r') as zf:
+            zf.setpassword(password)
 
-def zece(zip_path,target_dir,file,password):
-
-    with pyzipper.AESZipFile(zip_path, 'r') as zf:
-        zf.setpassword(password)
-
-        for member in zf.infolist():
-            member_path = os.path.realpath(os.path.join(target_dir, member.filename))
-            if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
-                raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-        zf.extractall(target_dir)
-    app.logger.info(f"解压完成: {file} -> {target_dir}")
+            for member in zf.infolist():
+                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+            zf.extractall(target_dir)
+        app.logger.info(f"解压完成: {file} -> {target_dir}")
+    except Exception as e:
+        save_task(task_id,{'error':str(e)})
 
 def download(url, dir, task_id, cancel_check):
     filepath = None
@@ -664,6 +686,7 @@ def download(url, dir, task_id, cancel_check):
         return True
     except Exception as e:
         logging.error(f"下载错误: {e}")
+        save_task(task_id,{'error':str(e)})
         if filepath and os.path.exists(filepath):
             os.remove(filepath)
         raise
@@ -700,7 +723,6 @@ button{width:100%;padding:10px;background:#3498db;color:#fff;border:none;border-
 <button type="submit">登录</button></form>
 </body></html>
 '''
-
 
 
 # ==================== 路由 ====================
@@ -886,7 +908,7 @@ def call_move():
     task_queue.put((task_id, func, arg_list, tool_id))
     return jsonify({'success':True,'task_id':task_id})
 
-def move_file(source,target,task_id,cancel_event):
+def move_file(source,target,task_id,cancel_check):
     
 
     try:
@@ -909,7 +931,7 @@ def move_file(source,target,task_id,cancel_event):
             return "源路径类型未知", 400
         a.start()
         while a.is_alive():
-            if cancel_event.is_set():
+            if cancel_check():
                 a.kill()
                 raise qe("移动被取消")
         return True
@@ -952,7 +974,7 @@ def call_copy():
 
 
 
-def copy_file(source,target,task_id,cancel_event):
+def copy_file(source,target,task_id,cancel_check):
     
 
     try:
@@ -977,12 +999,13 @@ def copy_file(source,target,task_id,cancel_event):
             return "源路径类型未知", 400
         a.start()
         while a.is_alive():
-            if cancel_event():
+            if cancel_check():
                 a.kill()
                 raise qe("复制被取消")
         return True
     except Exception as e:
         logging.error(f"复制失败: {e}")
+        save_task(task_id,{'error':e})
         return False
 
     
@@ -1020,7 +1043,7 @@ def call_ze():
     return jsonify({'success':True,'task_id':task_id})
     
 
-def zip_ex(f,sp,password,task_id,cancel_event):
+def zip_ex(f,sp,password,task_id,cancel_check):
    
 
 
@@ -1031,21 +1054,23 @@ def zip_ex(f,sp,password,task_id,cancel_event):
         return False
     
 
-    n = file_type(magic.Magic(mime=True),f)
+    _,n = os.path.splitext(f)
     try:
-        if n == "application/zip":
-            a,b,target_dir = zipe(f,sp,password)
-        elif n == 'application/x-7z-compressed':
-            a,b,target_dir = sze(f,sp,password)
+        if n == ".zip":
+            a,b,target_dir = zipe(f,sp,password,task_id)
+        elif n == '.7z':
+            a,b,target_dir = sze(f,sp,password,task_id)
 
         else:
+            save_task(task_id,{'error':'not found'})
             return False
         if not a:
+            save_task(task_id,{'error':'error'})
             return False
         b.start()
 
         while b.is_alive():
-            if cancel_event():
+            if cancel_check():
                 if os.path.exists(target_dir) and not os.listdir(target_dir):
                     os.rmdir(target_dir)
                 raise qe('canceled')
@@ -1053,6 +1078,7 @@ def zip_ex(f,sp,password,task_id,cancel_event):
     except Exception as e:
         traceback.print_exc()
         logging.error(str(e))
+        save_task(task_id,{'error':e})
         return False
 
 
@@ -1070,11 +1096,16 @@ def resolve_target_path(src_abs: str, target: str) -> str:
     else:
         target_abs = os.path.abspath(os.path.join(src_dir, target))
     
-    upload_abs = os.path.abspath(UPLOAD_DIR)
+    upload_abs:str = os.path.abspath(UPLOAD_DIR)
     # 确保目标路径在 UPLOAD_DIR 内部（或等于 UPLOAD_DIR 本身）
-    if not target_abs.startswith(upload_abs + os.sep) and target_abs != upload_abs:
-        print(target_abs,flush=True)
-        raise ValueError("目标路径越权")
+    if sys.platform.startswith('win'):
+        if not target_abs.lower().startswith(upload_abs.lower()) and target_abs.lower() != upload_abs.lower():
+            print(target_abs,flush=True)
+            raise ValueError(f"目标路径越权;{target_abs};{upload_abs};{sys.platform}")
+    else:
+        if not target_abs.startswith(upload_abs) and target_abs != upload_abs:
+            print(target_abs,flush=True)
+            raise ValueError(f"目标路径越权;{target_abs};{upload_abs};{sys.platform}")
     return target_abs
 
 
@@ -1198,17 +1229,7 @@ def sssss():
     else:
         return redirect("/")
 
-def file_type(mine:magic.Magic,path):
-    if contains_chinese(path):
-        _,pn = os.path.splitext(os.path.basename(path))
-        with tempfile.TemporaryDirectory("server",dir=BASE_DIR) as tdir:
 
-            a = os.path.join(tdir,"a"+pn)
-            os.link(path,a)
-            nb = os.path.abspath(a)
-            n = mine.from_file(nb)
-    else:n = mine.from_file(path)
-    return n
 
 
 
@@ -1227,7 +1248,7 @@ def list_files():
     if not os.path.isdir(target_dir):
         return jsonify({'success': False, 'error': '路径不存在'}), 404
     items = []
-    mine = magic.Magic(mime=True)
+
     try:
         for name in os.listdir(target_dir):
             if name.startswith('.') or name == 'metadata' or name == 'chunks': continue
@@ -1235,8 +1256,8 @@ def list_files():
             n = str(full)
             is_dir = os.path.isdir(full)
             if os.path.isfile(full):
-                da,nb = os.path.splitext()
-            else:type_file = ""
+                da,nb = os.path.splitext(n)
+            else:nb = ""
             n = False
             a = ['.zip','.7z','.rar']
             if nb in a:
@@ -1248,7 +1269,7 @@ def list_files():
                 'type': 'directory' if is_dir else 'file',
                 'size': info.get('size', 0),
                 'modified': info.get('modified', ''),
-                'type_file': type_file,
+                'type_file': nb,
                 'type_zip':n
             })
         items.sort(key=lambda x: (0 if x['type']=='directory' else 1, x['name'].lower()))
@@ -1512,6 +1533,7 @@ def w(port):
                 if not encrypted_cmd:
                     break
                 cmd = encrypted_cmd.decode()
+
                 print(f"命令: {cmd}", flush=True)
                 logging.info(f"exec: {cmd.split(' ')[0:2]}")
 
