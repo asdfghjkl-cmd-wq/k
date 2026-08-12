@@ -25,7 +25,7 @@ from math import fabs
 from multiprocessing import Process as pro
 from py7zr import SevenZipFile
 from markupsafe import escape
-from filelock import FileLock
+
 import zipfile, requests,pyzipper
 from threading import Thread
 from queue import Queue
