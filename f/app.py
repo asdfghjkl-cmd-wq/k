@@ -18,7 +18,7 @@ def is_port_in_use(port):
         if conn.laddr.port == port and conn.status == "LISTEN":
             return True
     return False
-import tempfile
+import atexit
 true=True
 import hashlib
 from math import fabs
@@ -1710,8 +1710,17 @@ def update_file(ip, sm):
         sd.close()
         a.close()
             
-a = FileLock(os.path.join(BASE_DIR,'pro.lock'))
+LOCK_DIR = os.path.join(BASE_DIR, '.admin_port_lock')
 
+def try_acquire_admin_lock():
+    try:
+        os.mkdir(LOCK_DIR)        # 目录创建是原子操作，失败则已存在
+        return True
+    except FileExistsError:
+        return False
+
+def ss():
+    os.rmdir(LOCK_DIR)
 
 if __name__ == "__main__":
     import keyboard
@@ -1732,12 +1741,7 @@ if __name__ == '__main__':
     s.start()
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)
 else:
-
-    try:
-        a.acquire(timeout=0)          # a 是你上面创建的 FileLock 对象
-    except Exception:                 # 拿不到锁说明别的 worker 已经启动了管理服务
-        print("[Worker] 管理端口已由其他 worker 负责，本进程跳过。", flush=True)
-    else:
+    if try_acquire_admin_lock():
         # 本 worker 抢到了锁，负责启动管理端口
         while True:
             sm = random.randint(6000, 6050)
@@ -1749,3 +1753,5 @@ else:
 
         s = Thread(target=w, daemon=True, args=(sm,))
         s.start()
+        atexit.register(ss)
+    else:pass
