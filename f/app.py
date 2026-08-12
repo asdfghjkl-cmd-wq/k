@@ -9,7 +9,7 @@
 """
 #f
 
-import threading
+
 
 import psutil
 
@@ -18,7 +18,7 @@ def is_port_in_use(port):
         if conn.laddr.port == port and conn.status == "LISTEN":
             return True
     return False
-
+import tempfile
 true=True
 import hashlib
 from math import fabs
@@ -27,7 +27,7 @@ from py7zr import SevenZipFile
 from markupsafe import escape
 import magic
 import zipfile, requests,pyzipper
-from threading import Thread, Lock, Event
+from threading import Thread
 from queue import Queue
 from urllib.parse import urlparse
 import logging
@@ -43,13 +43,21 @@ from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 ascii_lowercase += "0123456789"
-import tempfile
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 # 禁用不安全的请求警告（针对 verify=False）
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import redis
+
+
+# 从环境变量读取 Redis 地址，方便部署
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
 class qe(BaseException):
     pass
@@ -65,9 +73,11 @@ def get_filename_from_url(url):
     parsed_url = urlparse(url)
     return parsed_url.path.split('/')[-1]
 
+
+
 class tool:
     class u1:
-        def call(source_path,chunk_size,output_dir,task_id,cancel_event:Event):
+        def call(source_path,chunk_size,output_dir,task_id,cancel_event):
             if os.path.exists(output_dir):
                 if os.path.isdir(output_dir):
                         shutil.rmtree(output_dir)
@@ -78,7 +88,7 @@ class tool:
             file_count = 0
             with open(source_path, "rb") as src:
                 while True:
-                    if cancel_event.is_set():
+                    if cancel_event():
                         shutil.rmtree(output_dir)
                         raise qe("cancel")
                     data = src.read(chunk_size)
@@ -100,7 +110,7 @@ class tool:
 
 
     class u2:
-        def call(dir,tdir,task_id,cancel_event:Event):
+        def call(dir,tdir,task_id,cancel_event):
             file = open(os.path.join(dir,"file"),"r",encoding="utf-8")
             n = os.path.basename(file.readline().replace("\n",""))
  
@@ -108,7 +118,7 @@ class tool:
             file.close()
             bn = open(os.path.join(tdir,n),"wb")
             for nb in range(1,x+1):
-                if cancel_event.is_set():
+                if cancel_event():
                     os.remove(bn.name)
                     raise qe("cancel")
                 an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb")
@@ -116,88 +126,100 @@ class tool:
                 an.close()
 
 # ==================== 异步任务系统 ====================
-task_store = {}          # { task_id: { 'status':..., 'error':..., 'tool_id':..., 'progress':{'total':0,'current':0}, 'cancel_event':Event() } }
-task_store_lock = Lock()
+
 
 MAX_WORKERS = 3
 task_queue = Queue()
 def save_user():
-    global user_list,nigga_list,users,admin
-    try:
-        n = {
-            "ud":users,
-            'ul':user_list,
-            'nl':nigga_list,
-            "admin":admin
-        }
-        with open(f"{BASE_DIR}\\user.pkl","w") as d:
-            json.dump(n,d)
-        print('save ok',flush=True)
-    except Exception as e: 
-        print("save over:",e,flush=True)
+    """将用户数据存入 Redis"""
+    # 存储密码哈希
+    if users:
+        r.hset("users", mapping=users)   # {"username": "hash"}
+    # 存储用户列表
+    r.delete("user_list")
+    if user_list:
+        r.sadd("user_list", *user_list)
+    # 存储黑名单
+    r.delete("nigga_list")
+    if nigga_list:
+        r.sadd("nigga_list", *nigga_list)
+    # 存储管理员
+    r.set("admin", admin)
+    print('save ok', flush=True)
 
 def load_user():
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', os.environ.get('a', None))
-    ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', os.environ.get('p', None)))
-    users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
-    nigga_list = []
-    user_list = [ADMIN_USERNAME]
-    admin = ADMIN_USERNAME
+    """从 Redis 加载用户数据"""
+    global users, user_list, nigga_list, admin
 
-    try:
-        with open(f"{BASE_DIR}\\user.pkl","rb") as l:
-            n = dict(json.load(l))
-        users = n.get("ud")
-        user_list = n.get("ul")
-        nigga_list = n.get("nl")
-        admin = n.get('admin')
-        ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', name)
-        ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', password))
-        return users,user_list,nigga_list,admin
-    except:
-        return users,user_list,nigga_list,admin
+    # 默认管理员（环境变量）
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', os.environ.get('a', None))
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', os.environ.get('p', None))
+    ADMIN_PASSWORD_HASH = generate_password_hash(ADMIN_PASSWORD) if ADMIN_PASSWORD else None
+
+    # 尝试从 Redis 读取
+    redis_users = r.hgetall("users")
+    redis_user_list = list(r.smembers("user_list"))
+    redis_nigga_list = list(r.smembers("nigga_list"))
+    redis_admin = r.get("admin")
+
+    # 如果 Redis 中有数据就用 Redis 的
+    if redis_users:
+        users = redis_users
+        user_list = redis_user_list
+        nigga_list = redis_nigga_list
+        admin = redis_admin if redis_admin else ADMIN_USERNAME
+    else:
+        # 首次运行，用环境变量初始化
+        users = {ADMIN_USERNAME: ADMIN_PASSWORD_HASH}
+        user_list = [ADMIN_USERNAME]
+        nigga_list = []
+        admin = ADMIN_USERNAME
+        save_user()  # 写入 Redis
+
+    return users, user_list, nigga_list, admin
 tool_list = [6,50,51,1,2,4,64]
 def worker():
     while True:
         task_id, func, base_args, tool_id = task_queue.get()
-        
         if task_id is None:
             break
-        with task_store_lock:
-            task_store[task_id]['status'] = 'running'
+        # 更新状态为 running
+        r.hset(task_key(task_id), 'status', 'running')
+
         try:
             a = True
             with app.app_context():
-                if tool_id in tool_list:  
-                    with task_store_lock:
-                        task_store[task_id]['can_cancel'] = True
+                if tool_id in tool_list:
+                    r.hset(task_key(task_id), 'can_cancel', 'True')
                     a = False
                     if tool_id == 64:
-                        a,n = func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
-                    else:a = func(*base_args, task_id=task_id, cancel_event=task_store[task_id]['cancel_event'])
+                        a, n = func(*base_args, task_id=task_id,
+                                    cancel_check=lambda: is_cancelled(task_id))
+                    else:
+                        a = func(*base_args, task_id=task_id,
+                                 cancel_check=lambda: is_cancelled(task_id))
                 else:
-                    task_store[task_id]['can_cancel'] = False
+                    r.hset(task_key(task_id), 'can_cancel', 'False')
                     func(*base_args)
-            with task_store_lock:
-                if a and tool_id == 64:
-                    task_store[task_id]['status'] = 'finished'
-                    task_store[task_id]['return'] = n
-                elif a :task_store[task_id]['status'] = 'finished'
-                else:
-                    task_store[task_id]['status'] = 'failed'
+
+            if a and tool_id == 64:
+                r.hset(task_key(task_id), 'status', 'finished')
+                r.hset(task_key(task_id), 'return', n)
+            elif a:
+                r.hset(task_key(task_id), 'status', 'finished')
+            else:
+                r.hset(task_key(task_id), 'status', 'failed')
 
         except Exception as e:
             traceback.print_exc()
-            with task_store_lock:
-                if task_store[task_id]['cancel_event'].is_set():
-                    task_store[task_id]['status'] = 'cancelled'
-                else:
-                    task_store[task_id]['status'] = 'failed'
-                    task_store[task_id]['error'] = str(e)
+            if is_cancelled(task_id):
+                r.hset(task_key(task_id), 'status', 'cancelled')
+            else:
+                r.hset(task_key(task_id), 'status', 'failed')
+                r.hset(task_key(task_id), 'error', str(e))
         except qe:
-            with task_store_lock:
-                if task_store[task_id]['cancel_event'].is_set():
-                    task_store[task_id]['status'] = 'cancelled'
+            if is_cancelled(task_id):
+                r.hset(task_key(task_id), 'status', 'cancelled')
         finally:
             task_queue.task_done()
 
@@ -268,6 +290,77 @@ share_dict = dict()
 name = ran_str(4)
 password = ran_str(8)
 print("name:", name, "\n", "password:", password, "\n", flush=True)
+
+# 任务数据用 Hash 存储，键为 task:<task_id>
+TASK_PREFIX = "task:"
+
+def task_key(task_id):
+    return TASK_PREFIX + task_id
+
+def save_task(task_id, data):
+    """保存任务到 Redis（初始化或更新）"""
+    key = task_key(task_id)
+    # 需要序列化嵌套结构
+    safe = {}
+    for k, v in data.items():
+        if isinstance(v, (dict, list)):
+            safe[k] = json.dumps(v)
+        else:
+            safe[k] = str(v)
+    r.hset(key, mapping=safe)
+
+def get_task(task_id):
+    """从 Redis 读取任务，并反序列化"""
+    key = task_key(task_id)
+    if not r.exists(key):
+        return None
+    raw = r.hgetall(key)
+    # 把已知的 JSON 字段反序列化
+    if 'progress' in raw:
+        try:
+            raw['progress'] = json.loads(raw['progress'])
+        except:
+            pass
+    if 'file_info' in raw:
+        try:
+            raw['file_info'] = json.loads(raw['file_info'])
+        except:
+            pass
+    # cancel_flag 转 int
+    raw['cancel_flag'] = int(raw.get('cancel_flag', 0))
+    return raw
+
+def delete_task(task_id):
+    r.delete(task_key(task_id))
+
+def is_cancelled(task_id):
+    """任务执行中检查是否被取消"""
+    flag = r.hget(task_key(task_id), 'cancel_flag')
+    return flag == '1'
+
+def cancel_task_by_id(task_id):
+    """设置取消标记"""
+    if not r.exists(task_key(task_id)):
+        return False
+    status = r.hget(task_key(task_id), 'status')
+    if status not in ('running', 'pending'):
+        return False
+    r.hset(task_key(task_id), 'cancel_flag', '1')
+    return True
+
+def update_task_progress(task_id, total=None, current=None):
+    """更新任务进度（下载等场景）"""
+    key = task_key(task_id)
+    progress_str = r.hget(key, 'progress')
+    if progress_str:
+        progress = json.loads(progress_str)
+    else:
+        progress = {'total': 0, 'current': 0}
+    if total is not None:
+        progress['total'] = total
+    if current is not None:
+        progress['current'] = current
+    r.hset(key, 'progress', json.dumps(progress))
 
 users,user_list,nigga_list,admin = load_user()
 # ==================== 全局 HTML 模板 ====================
@@ -547,28 +640,28 @@ def zece(zip_path,target_dir,file,password):
         zf.extractall(target_dir)
     app.logger.info(f"解压完成: {file} -> {target_dir}")
 
-def download(url,dir, task_id, cancel_event):
-    """下载文件，支持进度更新和取消"""
+def download(url, dir, task_id, cancel_check):
     filepath = None
     try:
         filename = get_filename_from_url(url)
-        filepath = os.path.join(UPLOAD_DIR, dir ,filename)
+        filepath = os.path.join(UPLOAD_DIR, dir, filename)
         resp = requests.get(url, stream=True, timeout=10, verify=False)
         resp.raise_for_status()
         total = int(resp.headers.get('content-length', 0))
-
-        with task_store_lock:
-            task_store[task_id]['progress'] = {'total': total, 'current': 0}
+        update_task_progress(task_id, total=total, current=0)  # 使用已有的辅助函数
 
         with open(filepath, 'wb') as f:
+            downloaded = 0
             for chunk in resp.iter_content(chunk_size=8192):
-                if cancel_event.is_set():
+                if cancel_check():
                     resp.close()
                     raise Exception("下载被取消")
                 if chunk:
                     f.write(chunk)
-                    with task_store_lock:
-                        task_store[task_id]['progress']['current'] += len(chunk)
+                    downloaded += len(chunk)
+                    # 正确更新进度：传入已下载字节数
+                    update_task_progress(task_id, current=downloaded)
+        return True
     except Exception as e:
         logging.error(f"下载错误: {e}")
         if filepath and os.path.exists(filepath):
@@ -649,29 +742,42 @@ def loginok():
 @login_required
 @isadmin
 def get_download_list():
-    a =[]
-    for x in task_store.keys():
-        if task_store[x]['tool_id'] == 6 and task_store[x]['status'] == "running":
-            a.append(x)
-    return a,200
+    keys = r.keys(f"{TASK_PREFIX}*")
+    running_downloads = []
+    for key in keys:
+        if isinstance(key, bytes):
+            tid = key.decode().split(':', 1)[-1]
+        else:
+            tid = key.split(':', 1)[-1]
+        tool_id = r.hget(key, 'tool_id')
+        status = r.hget(key, 'status')
+        if tool_id and status and str(tool_id) == '6' and status == 'running':
+            running_downloads.append(tid)
+    return jsonify(running_downloads), 200
             
 @app.route("/api/dl")
 @login_required
 @isadmin
-def get_task_list():
-    a = {}
-    n = [str,int,list,dict,bool,bytes,bytearray]
-    with task_store_lock:
-        for task_id, task in task_store.items():
-            a[task_id] = dict()
-            task = dict(task)
-            for aa,x in task.items():
-                
-                if type(x) in n:
-                    print(aa,":",x)
-                    a[task_id][aa] = x
-                print(type(x))
-    return jsonify(a)
+def get_task_list_all():
+    # 获取 Redis 中所有任务
+    keys = r.keys(f"{TASK_PREFIX}*")
+    tasks = {}
+    allowed_types = (str, int, float, bool, list, dict)
+    for key in keys:
+        # key 格式为 task:uuid
+        if isinstance(key, bytes):
+            tid = key.decode().split(':', 1)[-1]
+        else:
+            tid = key.split(':', 1)[-1]
+        task = get_task(tid)  # 已经反序列化 progress/file_info
+        if task:
+            # 过滤不可序列化字段，保持与原 /api/dl 一致
+            filtered = {}
+            for k, v in task.items():
+                if isinstance(v, allowed_types) or v is None:
+                    filtered[k] = v
+            tasks[tid] = filtered
+    return jsonify(tasks)
 
 @app.route('/file/hash',methods=['POST'])
 @login_required
@@ -688,27 +794,26 @@ def call_hash():
         n.status_code = 400
         return n
     func = get_hash
-    cen = Event()
+
     task_id = str(uuid.uuid4())
     tool_id = 64
-    with task_store_lock:
-        task_store[task_id] = {
+    
+    save_task(task_id,{
                 'status': 'pending',
                 'error': '',
                 'tool_id': tool_id,
                 'progress': {'total': 0, 'current': 0},
-                'cancel_event': cen,
                 'file_info':{'src':sp},
                 'path': os.path.dirname(os.path.abspath(sp))
-            }
+            })
     arg_list = (sp,)
     print(arg_list)
     task_queue.put((task_id, func, arg_list, tool_id))
     return jsonify({'success':True,'task_id':task_id})
     
 
-    
-            
+
+
 
 @app.route('/')
 @login_required
@@ -720,8 +825,8 @@ def index():
 @isadmin
 @login_required
 def get_task_status(task_id):
-    with task_store_lock:
-        task = task_store.get(task_id)
+
+    task = get_task(task_id)
     if not task:
         return jsonify({'success': False, 'error': '无效任务ID'}), 404
 
@@ -735,18 +840,20 @@ def get_task_status(task_id):
     a['success'] =True
 
     return jsonify(a)
-@app.route('/api/task/<task_id>/cancel', methods=['POST','GET'])
-@isadmin
+
+
+@app.route('/api/task/<task_id>/cancel', methods=['POST', 'GET'])
 @login_required
+@isadmin
 def cancel_task(task_id):
-    with task_store_lock:
-        task = task_store.get(task_id)
-    if not task:
-        return jsonify({'success': False, 'error': '无效任务ID'}), 404
-    if task['status'] not in ('running', 'pending'):
+    success = cancel_task_by_id(task_id)
+    if not success:
+        task = get_task(task_id)
+        if not task:
+            return jsonify({'success': False, 'error': '无效任务ID'}), 404
         return jsonify({'success': False, 'error': '任务无法取消'}), 400
-    task['cancel_event'].set()
     return jsonify({'success': True})
+
 
 @app.route("/file/move", methods=['POST'])
 @isadmin
@@ -762,24 +869,24 @@ def call_move():
     except (KeyError, TypeError):
         abort(400)
     func = move_file
-    cen = Event()
+
     task_id = str(uuid.uuid4())
     tool_id = 51
-    with task_store_lock:
-        task_store[task_id] = {
+
+    save_task(task_id,{
             'status': 'pending',
             'error': '',
             'tool_id': tool_id,
             'progress': {'total': 0, 'current': 0},
-            'cancel_event': cen,
+
             'file_info':{'src':source,'dst':resolve_target_path(safe_path(source), target)},
             'path': os.path.dirname(os.path.abspath(source))
-        }
+        })
     arg_list = (source,target)
     task_queue.put((task_id, func, arg_list, tool_id))
     return jsonify({'success':True,'task_id':task_id})
 
-def move_file(source,target,task_id,cancel_event:Event):
+def move_file(source,target,task_id,cancel_event):
     
 
     try:
@@ -825,19 +932,19 @@ def call_copy():
     except (KeyError, TypeError):
         abort(400)
     func = copy_file
-    cen = Event()
+
     task_id = str(uuid.uuid4())
     tool_id = 50
-    with task_store_lock:
-        task_store[task_id] = {
+
+    save_task(task_id,{
             'status': 'pending',
             'error': '',
             'tool_id': tool_id,
             'progress': {'total': 0, 'current': 0},
-            'cancel_event': cen,
+
             'file_info':{'src':source,'dst':target},
             'path': os.path.dirname(os.path.abspath(source))
-        }
+        })
     arg_list = (source,target)
     task_queue.put((task_id, func, arg_list, tool_id))
     return jsonify({'success':True,'task_id':task_id})
@@ -845,7 +952,7 @@ def call_copy():
 
 
 
-def copy_file(source,target,task_id,cancel_event:Event):
+def copy_file(source,target,task_id,cancel_event):
     
 
     try:
@@ -870,7 +977,7 @@ def copy_file(source,target,task_id,cancel_event:Event):
             return "源路径类型未知", 400
         a.start()
         while a.is_alive():
-            if cancel_event.is_set():
+            if cancel_event():
                 a.kill()
                 raise qe("复制被取消")
         return True
@@ -897,25 +1004,23 @@ def call_ze():
         logging.error(str(e))
         abort(400)
     func = zip_ex
-    cen = Event()
+
     task_id = str(uuid.uuid4())
     tool_id = 4
-    with task_store_lock:
-        task_store[task_id] = {
+    save_task(task_id, {
                 'status': 'pending',
                 'error': '',
                 'tool_id': tool_id,
                 'progress': {'total': 0, 'current': 0},
-                'cancel_event': cen,
-                'file_info':{'src':f,'dst':sp},
+                                                'file_info':{'src':f,'dst':sp},
                 'path': os.path.dirname(os.path.abspath(f))
-            }
+            })
     arg_list = (f,sp,password)
     task_queue.put((task_id, func, arg_list, tool_id))
     return jsonify({'success':True,'task_id':task_id})
     
 
-def zip_ex(f,sp,password,task_id,cancel_event:Event):
+def zip_ex(f,sp,password,task_id,cancel_event):
    
 
 
@@ -940,7 +1045,7 @@ def zip_ex(f,sp,password,task_id,cancel_event:Event):
         b.start()
 
         while b.is_alive():
-            if cancel_event.is_set():
+            if cancel_event():
                 if os.path.exists(target_dir) and not os.listdir(target_dir):
                     os.rmdir(target_dir)
                 raise qe('canceled')
@@ -1034,15 +1139,14 @@ def call_tool():
             return jsonify({'success': False, 'error': '未知工具'}), 404
 
         task_id = str(uuid.uuid4())
-        with task_store_lock:
-            task_store[task_id] = {
+        save_task(task_id,{
                 'status': 'pending',
                 'error': '',
                 'tool_id': tool_id,
                 'progress': {'total': 0, 'current': 0},
-                'cancel_event': Event(),
+
                 'path': a.get("path")
-            }
+            })
         task_queue.put((task_id, func, arg_list, tool_id))
         return jsonify({'success': True, 'task_id': task_id}), 202
 
@@ -1095,7 +1199,15 @@ def sssss():
         return redirect("/")
 
 def file_type(mine:magic.Magic,path):
-    n = mine.from_buffer(open(path,'rb').read(8192))
+    if contains_chinese(path):
+        _,pn = os.path.splitext(os.path.basename(path))
+        with tempfile.TemporaryDirectory("server",dir=BASE_DIR) as tdir:
+
+            a = os.path.join(tdir,"a"+pn)
+            os.link(path,a)
+            nb = os.path.abspath(a)
+            n = mine.from_file(nb)
+    else:n = mine.from_file(path)
     return n
 
 
@@ -1123,11 +1235,11 @@ def list_files():
             n = str(full)
             is_dir = os.path.isdir(full)
             if os.path.isfile(full):
-                type_file = file_type(mine=mine,path=full)
+                da,nb = os.path.splitext()
             else:type_file = ""
             n = False
-            a = ['application/x-7z-compressed','application/x-bzip2','application/x-gzip','application/x-xz','application/x-rar','application/x-tar','application/zip','application/x-rar-compressed','application/vnd.rar']
-            if type_file in a:
+            a = ['.zip','.7z','.rar']
+            if nb in a:
                 n = True
 
             info = {} if is_dir else (get_file_info(full) or {})
@@ -1202,33 +1314,25 @@ def delete_item(item_path):
         logging.error(str(e))
         return jsonify({'success': False, 'error': ""}), 500
 
-@app.route('/share/share_put',methods=["POST"])
+@app.route('/share/share_put', methods=['POST'])
 @isadmin
 @login_required
 def share_put():
-    global share_dict
-    
-    a = dict(request.json)
-    file = a.get('file')
-    u =str(uuid.uuid4())
+    data = request.json
+    file = data.get('file')
     try:
-        full = safe_path(file)       # 校验通过后得到绝对路径
+        full = safe_path(file)
     except ValueError:
         return jsonify({'success': False, 'error': '路径非法'}), 400
-    share_dict[u] = {}
-    share_dict[u]['link'] = full
-    share_dict[u]['time'] = time.time()
+    u = str(uuid.uuid4())
+    r.setex(f"share:{u}", 86400, full)   # 24小时过期
     host = request.host_url
-    return jsonify({"link": str(host+"share/share_get/"+u)})
+    return jsonify({'link': host + "share/share_get/" + u})
 
 @app.route('/share/share_get/<path:uuid>')
 def down(uuid):
-    try:
-        file_path = share_dict.get(uuid,{}).get('link',"")
-        if time.time() - share_dict.get(uuid,{}).get('time',0) > 86400:
-            return 'time is lost',404
-    except Exception as e:
-        print(e,flush=True)
+    file_path = r.get(f"share:{uuid}")
+    if not file_path:
         abort(404)
     try:
         full = safe_path(file_path)
@@ -1417,8 +1521,9 @@ def w(port):
                     sf.close()
                     break
                 if cmd in ("exit", "\\", "q"):
-                    for task in task_store.values():
-                        task.get("cancel_event", Event()).set()
+                    keys = r.keys(f"{TASK_PREFIX}*")
+                    print(keys,flush=True)
+                        
                     os._exit(0)
                 elif cmd.lower().startswith("ls"):
                     path_part = cmd.replace("ls", "", 1).strip()
