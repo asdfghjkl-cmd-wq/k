@@ -13,6 +13,8 @@
 
 import psutil
 
+from f.uploads.app import get_task_list
+
 def is_port_in_use(port):
     for conn in psutil.net_connections():
         if conn.laddr.port == port and conn.status == "LISTEN":
@@ -1545,9 +1547,28 @@ def w(port):
                     break
                 if cmd in ("exit", "\\", "q"):
                     keys = r.keys(f"{TASK_PREFIX}*")
-                    print(keys,flush=True)
+                    for key in keys:
+                        cancel_task_by_id(key)
                         
                     os._exit(0)
+                elif cmd.lower() == 'gettask':
+                    keys = r.keys(f"{TASK_PREFIX}*")
+                    tasks = {}
+                    
+                    for key in keys:
+                        # key 格式为 task:uuid
+                        if isinstance(key, bytes):
+                            tid = key.decode().split(':', 1)[-1]
+                        else:
+                            tid = key.split(':', 1)[-1]
+                        task = get_task(tid)  # 已经反序列化 progress/file_info
+                        if task:
+                            # 过滤不可序列化字段，保持与原 /api/dl 一致
+                            filtered = {}
+                            for k, v in task.items():
+                                
+                                filtered[k] = v
+                            tasks[tid] = filtered
                 elif cmd.lower().startswith("ls"):
                     path_part = cmd.replace("ls", "", 1).strip()
                     tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part))
