@@ -56,7 +56,7 @@ import redis
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 REDIS_DB = int(os.environ.get('REDIS_DB', 0))
-REDIS_PASSWORD  = os.environ.get('REDIS_PASSWORD', "")
+REDIS_PASSWORD  = os.environ.get('REDIS_PASSWORD', None)
 
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD,decode_responses=True)
 print(r.info('server')['redis_version'],flush=True)
@@ -1723,9 +1723,7 @@ def try_acquire_admin_lock():
 def ss():
     os.rmdir(LOCK_DIR)
 
-if __name__ == "__main__":
-    import keyboard
-    keyboard.add_hotkey("ctrl+n",os._exit,args=(0,))
+
 if __name__ == '__main__':
     print(f"🌐 启动：http://0.0.0.0:5000\n访问http://{socket.gethostbyname(socket.gethostname())}:5000", flush=True)
     if os.path.exists(os.path.join(BASE_DIR,"de.lock")):
