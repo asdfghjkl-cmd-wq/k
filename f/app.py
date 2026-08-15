@@ -110,6 +110,7 @@ class tool:
                 meta.write(f"{os.path.basename(source_path)}\n")
                 meta.write(f"{file_count}\n")
                 meta.write(f"{chunk_size}\n")
+            return true
 
 
     class u2:
@@ -127,6 +128,7 @@ class tool:
                 an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb")
                 bn.write(an.read())
                 an.close()
+            return True
 
 # ==================== 异步任务系统 ====================
 
@@ -211,7 +213,8 @@ def worker():
             elif a:
                 r.hset(task_key(task_id), 'status', 'finished')
             else:
-                r.hset(task_key(task_id), 'status', 'failed;')
+                r.hset(task_key(task_id), 'status', 'failed')
+                r.hset(task_key(task_id), 'error', 'unkown')
 
         except Exception as e:
             traceback.print_exc()
@@ -1569,11 +1572,12 @@ def w(port):
                                 
                                 filtered[k] = v
                             tasks[tid] = filtered
+                    send_plain(sock=sf,msg=str(task))
                 elif cmd.lower().startswith("ls"):
                     path_part = cmd.replace("ls", "", 1).strip()
                     tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part))
                     send_plain(sf, tree)
-
+                
                 elif cmd == "load":
                     load_html()
                     send_plain(sf, "load ok")
