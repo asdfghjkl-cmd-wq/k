@@ -13,7 +13,7 @@
 
 import psutil
 
-from f.uploads.app import get_task_list
+
 
 def is_port_in_use(port):
     for conn in psutil.net_connections():
