@@ -9,22 +9,25 @@ def update(ip,port):
     ac = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     ac.connect((ip,port))
     fil = input("path:")
+
     if os.path.isfile(fil):
         name = os.path.basename(fil)
         size = os.path.getsize(fil)
 
         ac.send(name.encode()+b';'+str(size).encode())
-       
+
         ac.recv(10)          # 接收 "ok"
     # 发送文件时，可以不发送结尾 \0，而是发送完成后 shutdown 写端
+
+        
         with tqdm.tqdm(total=size) as dd:
-            with open(fil, 'rb') as d:
-                while True:
-                    data = d.read(8192)
-                    if not data:
-                        break
-                    ac.send(data)
-                    dd.update(2048)
+                with open(fil, 'rb') as d:
+                    while True:
+                        data = d.read(8192)
+                        if not data:
+                            break
+                        ac.sendall(data)
+                        dd.update(8192)
         ac.shutdown(socket.SHUT_WR)   # 告诉对端写完了
         ac.recv(10)   # 等待最终确认
         ac.close()

@@ -1771,7 +1771,6 @@ else:
             sm = random.randint(6000, 6050)
             if not is_port_in_use(sm):
                 break
-                  # 你最终强制使用的端口，建议直接固定
         print(f"管理端口链接: {socket.gethostbyname(socket.gethostname())}:{sm}", flush=True)
         logging.info(f"管理端口链接: {socket.gethostbyname(socket.gethostname())}:{sm}")
         r.set('man_port',sm)
