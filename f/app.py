@@ -1513,7 +1513,7 @@ def w(port):
             encrypted_auth = listen_encrypted(sf, private_key)
             auth_str = encrypted_auth.decode()
             nm = auth_str.split(',')
-
+            send_plain(sf,'ok')
             if nm[0] == admin and check_password_hash(users.get(nm[0], ''), nm[1]):
                 send_plain(sf, "y")
                 print('认证成功', flush=True)
@@ -1717,18 +1717,19 @@ def update_file(ip, sm):
         file_path = os.path.join(UPLOAD_DIR, file_name)
         with open(file_path, 'wb') as fw:
             while received < file_size:
-                data = sd.recv(min(2048, file_size - received))
-                if not data:
-                    break
-                # 处理末尾的 \0
-                if received + len(data) >= file_size:
-                    # 可能是最后一块数据，包含 \0
-                    # 简单做法：不发送 \0，靠长度判断结束
-                    if data.endswith(b'\0'):
-                        data = data.removesuffix(b'\0')
-                fw.write(data)
-                received += len(data)
-        sd.send(b'ok')   # 发送成功确认
+                    data = sd.recv(min(8192, file_size - received))
+                    if not data:
+                        break
+                    sd.sendall(b'ok')
+                    seek = sd.recv(256)
+                    sd.sendall(b'ok')
+                    if seek.decode().isdecimal():
+                        fw.seek(int(seek.decode()))
+                    else:
+                        raise Exception('net seek error')
+                    fw.write(data)
+                    received += len(data)
+            sd.send(b'ok')   # 发送成功确认
     except Exception as e:
         print(f"上传错误: {e}", flush=True)
         # 可以向客户端发送错误信息
