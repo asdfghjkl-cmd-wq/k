@@ -48,26 +48,23 @@ def update(ip,port):
         ac.recv(10)   # 等待最终确认
         ac.close()
 
-aa = input("address:")
-if ':' in aa:
-    xx = aa.split(':')
-    aa = xx[0]
-    bb = xx[1]
-else:
-    bb = input('post:')
-if aa=='':
-    aa="127.0.0.1"
-    bb = "7060"
-if bb.isdecimal():
-    bb = int(bb)
-else:exit()
-n = input('user:')
-p = input('password:')
-if n == "" and p == "":
-    p = n = 'admin'
-def login(aa,bb,n,p):
+
+
+def login():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
+    aa = input("address:")
+    if ':' in aa:
+        xx = aa.split(':')
+        aa = xx[0]
+        bb = xx[1]
+    else:
+        bb = input('post:')
+    if aa=='':
+        aa="127.0.0.1"
+        bb = "7060"
+    if bb.isdecimal():
+        bb = int(bb)
+    else:exit()
     sock.connect((aa,bb))
 
     # 1. 接收公钥长度 + 公钥数据
@@ -79,7 +76,10 @@ def login(aa,bb,n,p):
     public_key = RSA.import_key(pub_bytes)
 
     # 2. 加密并发送认证信息
-    
+    n = input('user:')
+    p = input('password:')
+    if n == "" and p == "":
+        p = n = 'admin'
     cipher = PKCS1_OAEP.new(public_key)
     auth_data = f'{n},{p}'.encode()   # 注意长度不能超过86字节
     enc = cipher.encrypt(auth_data)
@@ -88,6 +88,7 @@ def login(aa,bb,n,p):
     sock.settimeout(10)
     try:sock.recv(10)
     except Exception:
+        sock.shutdown(socket.SHUT_RDWR)
         sock.close()
         login(aa,bb,n,p=p)
     # 3. 接收服务器的明文回复（以换行结束）
@@ -106,8 +107,8 @@ def login(aa,bb,n,p):
                 break
             response += ch
     print('认证结果:', response.decode())
-    return sock,cipher
-sock,cipher = login(aa,bb,n,p)
+    return sock,cipher,aa
+sock,cipher,aa = login()
 # 4. 后续命令同样加密发送，明文接收回复
 while True:
     cmd = input('> ')
