@@ -113,12 +113,22 @@ sock,cipher,aa = login()
 while True:
     cmd = input('> ')
     if cmd == 'quit':
+        cmd = '</c>'
+        enc_cmd = cipher.encrypt(cmd.encode())
+        sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)
+        while True:
+            ch = sock.recv(1)
+            if ch == b'\0' or not ch:
+                break
+            resp += ch
+        print(resp.decode())
         exit(0)
     if cmd == "":
         cmd = "k"
 
     enc_cmd = cipher.encrypt(cmd.encode())
     sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)
+
     resp = b''
     while True:
         ch = sock.recv(1)
