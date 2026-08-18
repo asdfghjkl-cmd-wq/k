@@ -5,50 +5,44 @@ from time import sleep
 import tqdm
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
+def update(host,port):
+    a = input('path:')
+    if os.path.isfile(a):
+        send_file(a,host,port)
 
-def send_date(data:bytes,sa:int,ac:socket.socket,timeout):
-    ac.settimeout(timeout)
+def send_file(filepath, host, port):
+    if not os.path.exists(filepath):
+        print(f"File {filepath} not found")
+        return
     
-    try:
-        ac.sendall(data)
-        ac.recv(10)
-        ac.sendall(str(sa).encode())
-        ac.recv(10)
-    except Exception as e:
-        print("link error:",str(e))
-        print(f"restart {timeout*2}")
-        sleep(timeout)
-        send_date(data=data,sa=sa,ac=ac,timeout=timeout*2)
-
-def update(ip,port):
-    ac = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    ac.connect((ip,port))
+    filename = os.path.basename(filepath)
+    filesize = os.path.getsize(filepath)
     
-    fil = input("path:")
-    sa = 0
-    if os.path.isfile(fil):
-        name = os.path.basename(fil)
-        size = os.path.getsize(fil)
-
-        ac.send(name.encode()+b';'+str(size).encode())
-
-        ac.recv(10)          # 接收 "ok"
-    # 发送文件时，可以不发送结尾 \0，而是发送完成后 shutdown 写端
-
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+        client_socket.connect((host, port))
         
-        with tqdm.tqdm(total=size) as dd:
-                with open(fil, 'rb') as d:
-                    while True:
-                        ss=d.read(8192)
-                        if not ss:
-                            break
-                        send_date(ss,sa,ac,1)
-                    
-                        dd.update(8192)
-                        sa += 8192
-        ac.shutdown(socket.SHUT_WR)   # 告诉对端写完了
-        ac.recv(10)   # 等待最终确认
-        ac.close()
+        # 1. 发送文件名长度和文件名
+        filename_bytes = filename.encode('utf-8')
+        filename_len = len(filename_bytes)
+        client_socket.sendall(struct.pack('!I', filename_len))
+        client_socket.sendall(filename_bytes)
+        
+        # 2. 发送文件大小
+        client_socket.sendall(struct.pack('!Q', filesize))
+        
+        # 3. 发送文件内容
+        sent = 0
+        with tqdm.tqdm(total=filesize) as dd:
+            with open(filepath, 'rb') as f:
+                while True:
+                    data = f.read(8192)
+                    dd.update(8192)
+                    if not data:
+                        break
+                    client_socket.sendall(data)
+                    sent += len(data)
+        
+        print(f"Sent {sent} bytes")
 
 
 

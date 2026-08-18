@@ -1699,50 +1699,49 @@ def w(port):
                     break
         # 连接关闭后继续等待新连接
 
-
-def update_file(ip, sm):
-    # 直接绑定 0.0.0.0 避免地址错误
-    a = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    a.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    a.bind(('0.0.0.0', sm))
-    a.listen(1)
-    sd, addr = a.accept()
-    try:
-        md = sd.recv(8192).decode()
-        file_name, file_size = md.split(";")
-        file_size = int(file_size)
-        sd.send(b"ok")  # 发送确认
-
-        received = 0
-        file_path = os.path.join(UPLOAD_DIR, file_name)
-        with open(file_path, 'wb') as fw:
-            while received < file_size:
-                    data = sd.recv(min(8192, file_size - received))
-                    if not data:
-                        break
-                    sd.sendall(b'ok')
-                    seek = b""
-                    while True:
-                        n = sd.recv(1)
-                        if not n:
-                            break
-                        seek+=n
-                    
-                    sd.sendall(b'ok')
-                    if seek.decode().isdecimal():
-                        fw.seek(int(seek.decode()))
-                    else:
-                        raise Exception('net seek error')
-                    fw.write(data)
-                    received += len(data)
-            sd.send(b'ok')   # 发送成功确认
-    except Exception as e:
-        print(f"上传错误: {e}", flush=True)
-        # 可以向客户端发送错误信息
-    finally:
-        sd.close()
-        a.close()
-            
+def update_file(ip,port):
+    n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    n.bind((ip[0],port))
+    n.listen(1)
+    con,addr = n.accept()
+    if receive_file(conn=con,save_dir=UPLOAD_DIR):
+        pass
+    else:print('error')
+    con.close()
+    n.close()
+    
+def receive_file(conn:socket.socket, save_dir='.'):
+    # 1. 接收文件名长度（4字节整数）
+    header = conn.recv(4)
+    if not header:
+        return False
+    filename_len = struct.unpack('!I', header)[0]
+    
+    # 2. 接收文件名
+    filename = conn.recv(filename_len).decode('utf-8')
+    
+    # 3. 接收文件大小（8字节整数）
+    filesize_data = conn.recv(8)
+    filesize = struct.unpack('!Q', filesize_data)[0]
+    
+    # 构建保存路径（防止路径穿越）
+    safe_filename = os.path.basename(filename)
+    filepath = os.path.join(save_dir, safe_filename)
+    
+    print(f"Receiving file: {safe_filename} ({filesize} bytes)")
+    
+    # 4. 接收文件内容
+    received = 0
+    with open(filepath, 'wb') as f:
+        while received < filesize:
+            data = conn.recv(min(8192, filesize - received))
+            if not data:
+                break
+            f.write(data)
+            received += len(data)
+    
+    print(f"File saved to {filepath}")
+    return received == filesize
 LOCK_DIR = os.path.join(BASE_DIR, '.admin_port_lock')
 
 def try_acquire_admin_lock():
