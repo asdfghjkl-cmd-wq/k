@@ -1701,7 +1701,7 @@ def w(port):
 
 def update_file(ip,port):
     n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    n.bind((ip[0],port))
+    n.bind(('0.0.0.0',port))
     n.listen(1)
     con,addr = n.accept()
     if receive_file(conn=con,save_dir=UPLOAD_DIR):
