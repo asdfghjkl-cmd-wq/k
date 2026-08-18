@@ -1721,7 +1721,13 @@ def update_file(ip, sm):
                     if not data:
                         break
                     sd.sendall(b'ok')
-                    seek = sd.recv(256)
+                    seek = b""
+                    while True:
+                        n = sd.recv(1)
+                        if not n:
+                            break
+                        seek+=n
+                    
                     sd.sendall(b'ok')
                     if seek.decode().isdecimal():
                         fw.seek(int(seek.decode()))

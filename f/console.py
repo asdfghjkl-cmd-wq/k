@@ -1,6 +1,7 @@
 import os
 import socket
 import struct
+from time import sleep
 import tqdm
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
@@ -16,6 +17,7 @@ def send_date(data:bytes,sa:int,ac:socket.socket,timeout):
     except Exception as e:
         print("link error:",str(e))
         print(f"restart {timeout*2}")
+        sleep(timeout)
         send_date(data=data,sa=sa,ac=ac,timeout=timeout*2)
 
 def update(ip,port):
