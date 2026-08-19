@@ -1706,42 +1706,175 @@ def update_file(ip,port):
     con,addr = n.accept()
     if receive_file(conn=con,save_dir=UPLOAD_DIR):
         pass
-    else:print('error')
+    else:print('error',flush=True)
     con.close()
     n.close()
     
-def receive_file(conn:socket.socket, save_dir='.'):
-    # 1. 接收文件名长度（4字节整数）
-    header = conn.recv(4)
-    if not header:
+import socket
+import json
+import struct
+import hashlib
+import os
+
+# ------------------ 辅助函数 ------------------
+
+def recv_msg(sock: socket.socket) -> bytes | None:
+    """接收一条完整消息：先读4字节长度，再读消息体"""
+    raw_len = sock.recv(4)
+    if not raw_len:
+        return None
+    msg_len = struct.unpack('!I', raw_len)[0]
+    data = b''
+    while len(data) < msg_len:
+        chunk = sock.recv(msg_len - len(data))
+        if not chunk:
+            raise ConnectionError("连接中断")
+        data += chunk
+    return data
+
+def send_msg(sock: socket.socket, data: bytes):
+    """发送一条消息：先发4字节长度，再发消息体"""
+    sock.sendall(struct.pack('!I', len(data)))
+    sock.sendall(data)
+
+def recv_json(sock: socket.socket) -> dict | None:
+    data = recv_msg(sock)
+    if data is None:
+        return None
+    return json.loads(data.decode('utf-8'))
+
+def send_json(sock: socket.socket, obj: dict):
+    send_msg(sock, json.dumps(obj).encode('utf-8'))
+
+def compute_hash(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+# ------------------ 核心接收函数 ------------------
+
+def receive_file(conn: socket.socket, save_dir: str = '.') -> bool:
+    """
+    从 socket 连接接收文件，支持断点续传和整体哈希校验。
+
+    参数:
+        conn: 已建立的 TCP socket 连接
+        save_dir: 文件保存目录，默认为当前目录
+
+    返回:
+        bool: True 表示接收成功且文件哈希一致，False 表示失败
+    """
+    try:
+        # 1. 接收文件元信息
+        meta = recv_json(conn)
+        if meta is None or meta.get('type') != 'meta':
+            raise ValueError("期望接收元信息消息")
+        filename = meta['filename']
+        file_size = meta['file_size']
+        block_size = meta['block_size']
+        total_blocks = meta['total_blocks']
+        file_hash = meta['file_hash']
+
+        # 2. 确保保存目录存在
+        os.makedirs(save_dir, exist_ok=True)
+
+        # 3. 临时分块目录（用于断点续传）
+        temp_dir = os.path.join(save_dir, f"{filename}.parts")
+        os.makedirs(temp_dir, exist_ok=True)
+
+        # 4. 扫描已接收的块
+        received_blocks = set()
+        for fname in os.listdir(temp_dir):
+            if fname.endswith('.block'):
+                try:
+                    block_id = int(fname.split('.')[0])
+                    received_blocks.add(block_id)
+                except ValueError:
+                    continue
+
+        # 5. 计算缺失块并告知客户端
+        missing_blocks = [i for i in range(total_blocks) if i not in received_blocks]
+        send_json(conn, {"type": "missing_blocks", "blocks": missing_blocks})
+
+        # 6. 接收缺失块
+        for expected_block_id in missing_blocks:
+            # 接收完整的块消息（头部8字节 + 数据）
+            msg = recv_msg(conn)
+            if msg is None:
+                # 连接中断，保留已接收块，返回 False（客户端可重连续传）
+                return False
+
+            if len(msg) < 8:
+                # 格式错误，回复 NACK 并继续
+                send_json(conn, {"type": "nack", "block_id": -1})
+                continue
+
+            # 解析头部
+            block_id, data_len = struct.unpack('!II', msg[:8])
+            data = msg[8:]
+
+            # 检查数据长度是否匹配
+            if len(data) != data_len:
+                # 长度不匹配，要求重发
+                send_json(conn, {"type": "nack", "block_id": block_id})
+                continue
+
+            # 块编号必须为当前期望的块（简化处理，假定顺序发送）
+            if block_id != expected_block_id:
+                # 乱序或错误块，回复 NACK
+                send_json(conn, {"type": "nack", "block_id": block_id})
+                continue
+
+            # 可选：在此处验证块哈希（若元信息中提供了块哈希列表）
+            # 为简化示例，此处省略块哈希验证，仅依赖最终整体哈希
+
+            # 保存块
+            block_path = os.path.join(temp_dir, f"{block_id}.block")
+            with open(block_path, 'wb') as f:
+                f.write(data)
+
+            # 回复 ACK
+            send_json(conn, {"type": "ack", "block_id": block_id})
+
+        # 7. 等待客户端完成通知
+        complete_msg = recv_json(conn)
+        if complete_msg is None or complete_msg.get('type') != 'complete':
+            # 协议错误，保留已接收块
+            send_json(conn, {"type": "failed", "reason": "protocol error"})
+            return False
+
+        # 8. 合并所有块为最终文件
+        final_path = os.path.join(save_dir, filename)
+        with open(final_path, 'wb') as out_f:
+            for i in range(total_blocks):
+                block_path = os.path.join(temp_dir, f"{i}.block")
+                if not os.path.exists(block_path):
+                    # 缺少块，合并失败，通知客户端
+                    send_json(conn, {"type": "failed", "reason": "missing blocks"})
+                    return False
+                with open(block_path, 'rb') as bf:
+                    out_f.write(bf.read())
+
+        # 9. 验证整体哈希
+        with open(final_path, 'rb') as f:
+            actual_hash = compute_hash(f.read())
+        if actual_hash == file_hash:
+            # 成功，清理临时目录
+            for fname in os.listdir(temp_dir):
+                os.remove(os.path.join(temp_dir, fname))
+            os.rmdir(temp_dir)
+            send_json(conn, {"type": "success"})
+            return True
+        else:
+            # 哈希不一致，保留临时目录以便重试
+            send_json(conn, {"type": "failed", "reason": "hash mismatch"})
+            return False
+
+    except Exception as e:
+        print(f"接收文件时发生异常: {e}")
+        try:
+            send_json(conn, {"type": "failed", "reason": str(e)})
+        except:
+            pass
         return False
-    filename_len = struct.unpack('!I', header)[0]
-    
-    # 2. 接收文件名
-    filename = conn.recv(filename_len).decode('utf-8')
-    
-    # 3. 接收文件大小（8字节整数）
-    filesize_data = conn.recv(8)
-    filesize = struct.unpack('!Q', filesize_data)[0]
-    
-    # 构建保存路径（防止路径穿越）
-    safe_filename = os.path.basename(filename)
-    filepath = os.path.join(save_dir, safe_filename)
-    
-    print(f"Receiving file: {safe_filename} ({filesize} bytes)")
-    
-    # 4. 接收文件内容
-    received = 0
-    with open(filepath, 'wb') as f:
-        while received < filesize:
-            data = conn.recv(min(8192, filesize - received))
-            if not data:
-                break
-            f.write(data)
-            received += len(data)
-    
-    print(f"File saved to {filepath}")
-    return received == filesize
 LOCK_DIR = os.path.join(BASE_DIR, '.admin_port_lock')
 
 def try_acquire_admin_lock():

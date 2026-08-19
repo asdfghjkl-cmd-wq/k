@@ -8,41 +8,102 @@ from Crypto.Cipher import PKCS1_OAEP
 def update(host,port):
     a = input('path:')
     if os.path.isfile(a):
-        send_file(a,host,port)
+        upload_file(a,host,port)
 
-def send_file(filepath, host, port):
-    if not os.path.exists(filepath):
-        print(f"File {filepath} not found")
-        return
-    
+import socket
+import json
+import struct
+import hashlib
+import os
+
+def recv_msg(sock):
+    raw_len = sock.recv(4)
+    if not raw_len:
+        return None
+    msg_len = struct.unpack('!I', raw_len)[0]
+    data = b''
+    while len(data) < msg_len:
+        chunk = sock.recv(msg_len - len(data))
+        if not chunk:
+            raise ConnectionError("连接中断")
+        data += chunk
+    return data
+
+def send_msg(sock, data):
+    sock.sendall(struct.pack('!I', len(data)))
+    sock.sendall(data)
+
+def send_json(sock, obj):
+    send_msg(sock, json.dumps(obj).encode('utf-8'))
+
+def recv_json(sock):
+    data = recv_msg(sock)
+    if data is None:
+        return None
+    return json.loads(data.decode('utf-8'))
+
+def compute_hash(data):
+    return hashlib.sha256(data).hexdigest()
+
+def upload_file(filepath, host, port, block_size=4096):
     filename = os.path.basename(filepath)
-    filesize = os.path.getsize(filepath)
-    
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect((host, port))
-        
-        # 1. 发送文件名长度和文件名
-        filename_bytes = filename.encode('utf-8')
-        filename_len = len(filename_bytes)
-        client_socket.sendall(struct.pack('!I', filename_len))
-        client_socket.sendall(filename_bytes)
-        
-        # 2. 发送文件大小
-        client_socket.sendall(struct.pack('!Q', filesize))
-        
-        # 3. 发送文件内容
-        sent = 0
-        with tqdm.tqdm(total=filesize) as dd:
-            with open(filepath, 'rb') as f:
-                while True:
-                    data = f.read(8192)
-                    dd.update(8192)
-                    if not data:
+    file_size = os.path.getsize(filepath)
+    file_hash = compute_hash(open(filepath, 'rb').read())
+    total_blocks = (file_size + block_size - 1) // block_size
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(30)
+    sock.connect((host, port))
+
+    try:
+        meta = {
+            "type": "meta",
+            "filename": filename,
+            "file_size": file_size,
+            "block_size": block_size,
+            "total_blocks": total_blocks,
+            "file_hash": file_hash
+        }
+        send_json(sock, meta)
+
+        resp = recv_json(sock)
+        missing_blocks = resp.get('blocks', [])
+        print(f"需要发送 {len(missing_blocks)} 个块")
+
+        with open(filepath, 'rb') as f:
+            for block_id in missing_blocks:
+                offset = block_id * block_size
+                f.seek(offset)
+                data = f.read(block_size)
+
+                header = struct.pack('!II', block_id, len(data))
+                
+                for i in range(1,10):
+                    send_msg(sock, header + data)
+                    
+                    ack:dict = recv_json(sock)
+                    
+                    if ack.get('type') == 'ack':
+                        print(f"块 {block_id} 发送成功")
                         break
-                    client_socket.sendall(data)
-                    sent += len(data)
-        
-        print(f"Sent {sent} bytes")
+                    else:
+
+                        print(f"块 {block_id} 发送失败")
+                        sleep(i*2)
+                    
+
+        send_json(sock, {"type": "complete"})
+        result = recv_json(sock)
+        if result.get('type') == 'success':
+            print("上传成功且校验通过")
+            return True
+        else:
+            print(f"上传失败: {result.get('reason')}")
+            return False
+    finally:
+        sock.close()
+
+
 
 
 
@@ -51,13 +112,11 @@ def login():
     aa = input("address:")
     if ':' in aa:
         xx = aa.split(':')
-        aa = xx[0]
-        bb = xx[1]
+        aa = xx[0].strip()
+        bb = xx[1].strip()
     else:
         bb = input('post:')
-    if aa=='':
-        aa="127.0.0.1"
-        bb = "7060"
+
     if bb.isdecimal():
         bb = int(bb)
     else:exit()
