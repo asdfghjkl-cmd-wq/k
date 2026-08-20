@@ -49,7 +49,8 @@ def upload_file(filepath, host, port, block_size=4096):
     filename = os.path.basename(filepath)
     file_size = os.path.getsize(filepath)
     file_hash = compute_hash(open(filepath, 'rb').read())
-    total_blocks = (file_size + block_size - 1) // block_size
+    total_blocks = (file_size + block_size - 1) // block_size - 1
+    print(total_blocks)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(30)
@@ -79,12 +80,17 @@ def upload_file(filepath, host, port, block_size=4096):
                 header = struct.pack('!II', block_id, len(data))
                 
                 for i in range(1,10):
-                    send_msg(sock, header + data)
+                    try:
+                        send_msg(sock, header + data)
+                    except Exception:
+                        print(f"块 {block_id} 发送失败")
+                        sleep(i*2)
+                        continue
                     
                     ack:dict = recv_json(sock)
                     
                     if ack.get('type') == 'ack':
-                        print(f"块 {block_id} 发送成功")
+                        print(f"块 {block_id} 发送成功,",total_blocks)
                         break
                     else:
 
