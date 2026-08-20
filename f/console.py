@@ -10,11 +10,11 @@ def update(host,port):
     if os.path.isfile(a):
         upload_file(a,host,port)
 
-import socket
+
 import json
-import struct
+
 import hashlib
-import os
+
 
 def recv_msg(sock):
     raw_len = sock.recv(4)
@@ -68,6 +68,7 @@ def upload_file(filepath, host, port, block_size=4096):
         send_json(sock, meta)
 
         resp = recv_json(sock)
+        assert resp is not None
         missing_blocks = resp.get('blocks', [])
         print(f"需要发送 {len(missing_blocks)} 个块")
 
@@ -87,8 +88,8 @@ def upload_file(filepath, host, port, block_size=4096):
                         sleep(i*2)
                         continue
                     
-                    ack:dict = recv_json(sock)
-                    
+                    ack= recv_json(sock)
+                    assert ack is not None
                     if ack.get('type') == 'ack':
                         print(f"块 {block_id} 发送成功,",total_blocks)
                         break
@@ -100,6 +101,7 @@ def upload_file(filepath, host, port, block_size=4096):
 
         send_json(sock, {"type": "complete"})
         result = recv_json(sock)
+        assert result is not None
         if result.get('type') == 'success':
             print("上传成功且校验通过")
             return True
@@ -151,7 +153,7 @@ def login():
     except Exception:
         sock.shutdown(socket.SHUT_RDWR)
         sock.close()
-        login(aa,bb,n,p=p)
+        login()
     # 3. 接收服务器的明文回复（以换行结束）
     try:
         response = b''
@@ -177,6 +179,7 @@ while True:
         cmd = '</c>'
         enc_cmd = cipher.encrypt(cmd.encode())
         sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)
+        resp = b''
         while True:
             ch = sock.recv(1)
             if ch == b'\0' or not ch:

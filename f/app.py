@@ -17,7 +17,7 @@ import psutil
 
 def is_port_in_use(port):
     for conn in psutil.net_connections():
-        if conn.laddr.port == port and conn.status == "LISTEN":
+        if conn.laddr.port == port and conn.status == "LISTEN": # type: ignore
             return True
     return False
 import atexit
@@ -44,7 +44,6 @@ from datetime import datetime
 from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-ascii_lowercase += "0123456789"
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
@@ -80,6 +79,7 @@ def get_filename_from_url(url):
 
 class tool:
     class u1:
+        @staticmethod
         def call(source_path,chunk_size,output_dir,task_id,cancel_check):
             if os.path.exists(output_dir):
                 if os.path.isdir(output_dir):
@@ -115,7 +115,7 @@ class tool:
 
     class u2:
         def call(dir,tdir,task_id,cancel_check):
-            file = open(os.path.join(dir,"file"),"r",encoding="utf-8")
+            file = open(os.path.join(dir,"file"),"r",encoding="utf-8") # type: ignore
             n = os.path.basename(file.readline().replace("\n",""))
  
             x = int(file.readline().replace("\n",""))
@@ -125,7 +125,7 @@ class tool:
                 if cancel_check():
                     os.remove(bn.name)
                     raise qe("cancel")
-                an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb")
+                an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb") # type: ignore # type: ignore
                 bn.write(an.read())
                 an.close()
             return True
@@ -143,7 +143,7 @@ def save_user():
     # 存储用户列表
     r.delete("user_list")
     if user_list:
-        r.sadd("user_list", *user_list)
+        r.sadd("user_list", *user_list) # type: ignore
     # 存储黑名单
     r.delete("nigga_list")
     if nigga_list:
@@ -241,7 +241,7 @@ if sys.platform.startswith('win'):
     try: locale.setlocale(locale.LC_ALL, 'zh_CN.UTF-8')
     except: pass
 
-def ran_str(length, charset=ascii_lowercase):
+def ran_str(length, charset=ascii_lowercase+'0123456789'):
     return ''.join(random.choice(charset) for _ in range(length))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1791,7 +1791,7 @@ def receive_file(conn: socket.socket, save_dir: str = '.') -> bool:
                     continue
 
         # 5. 计算缺失块并告知客户端
-        missing_blocks = [i for i in range(total_blocks) if i not in received_blocks]
+        missing_blocks = [i for i in range(total_blocks+1) if i not in received_blocks]
         send_json(conn, {"type": "missing_blocks", "blocks": missing_blocks})
 
         # 6. 接收缺失块
