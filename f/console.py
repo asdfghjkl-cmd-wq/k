@@ -49,7 +49,7 @@ def upload_file(filepath, host, port, block_size=4096):
     filename = os.path.basename(filepath)
     file_size = os.path.getsize(filepath)
     file_hash = compute_hash(open(filepath, 'rb').read())
-    total_blocks = (file_size + block_size - 1) // block_size - 1
+    total_blocks = (file_size + block_size - 1) // block_size 
     print(total_blocks)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -192,14 +192,46 @@ while True:
 
     enc_cmd = cipher.encrypt(cmd.encode())
     sock.sendall(struct.pack('>I', len(enc_cmd)) + enc_cmd)
+    resp = b""
+    ch = b''
 
-    resp = b''
+    import codecs
+
+    decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+    buffer = b''          # 累积原始字节，用于查找 </s>
+    received_end = False
+
     while True:
-        ch = sock.recv(1)
-        if ch == b'\0' or not ch:
+        try:
+            chunk = sock.recv(8)
+        except (socket.timeout, TimeoutError):
+            # 超时，认为数据已发送完毕
             break
-        resp += ch
-    print(resp.decode())
+        if not chunk:
+            break
+
+        buffer += chunk
+
+        # 输出所有可解码的文本（保留可能不完整的字节在 decoder 内部）
+        text = decoder.decode(chunk)
+        if text:
+            print(text, end='')
+
+        # 检查是否收到结束标记
+        if b'</s>' in buffer:
+            received_end = True
+            break
+
+    # 如果是因为超时退出但已经收到结束标记，同样正常结束
+    # 刷新解码器，输出剩余内容
+    text = decoder.decode(b'', final=True)
+    if text:
+        print(text, end='')
+
+    # 可选：根据 received_end 判断是否正常结束
+    if not received_end:
+        print("\n[警告] 未收到结束标记 </s>，连接可能异常中断")
+    print()
     if cmd == 'update':
         n = int(resp.decode())
         update(aa,n)

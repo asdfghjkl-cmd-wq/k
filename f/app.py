@@ -1425,25 +1425,28 @@ def handle_csrf_error(e):
 # ==================== 服务器控制台（调试用） ====================
 from pathlib import Path
 
-def generate_tree(path_str, n=0):
+def generate_tree(path_str,sock, n=0,):
     tree_str = ""
     path = Path(path_str).resolve()
     if not path.exists():
         return f"路径不存在: {path_str}\n"
+    
     try:
         if path.is_file():
-            tree_str += '    |' * n + '-' * 4 + path.name + '\n'
+            send_plain(sock,'    |' * n + '-' * 4 + path.name + '\n')
         elif path.is_dir():
             if n == 0:
-                tree_str += str(path) + '\\\n'
+                send_plain(sock,str(path) + '\\\n')
             else:
-                tree_str += '    |' * n + '-' * 4 + path.name + '\\\n'
+                send_plain(sock,'    |' * n + '-' * 4 + path.name + '\\\n')
             for child in sorted(path.iterdir()):
-                tree_str += generate_tree(str(child), n + 1)
+                
+                tree_str += generate_tree(str(child),sock, n + 1)
     except PermissionError:
-        tree_str += '    |' * n + '-' * 4 + f"[权限不足] {path.name}\n"
+        send_plain(sock,'    |' * n + '-' * 4 + f"[权限不足] {path.name}\n")
     except Exception as e:
-        tree_str += '    |' * n + '-' * 4 + f"[错误: {e}]\n"
+        send_plain(sock,'    |' * n + '-' * 4 + f"[错误: {e}]\n")
+    
     return tree_str
 
 def create_file(filename):
@@ -1534,6 +1537,7 @@ def w(port):
         # 命令处理循环
         while login_r:
             try:
+                send_plain(sf,'</s>')
                 # 接收加密的命令
                 encrypted_cmd = listen_encrypted(sf, private_key)
                 if not encrypted_cmd:
@@ -1575,8 +1579,8 @@ def w(port):
                     send_plain(sock=sf,msg=str(task))
                 elif cmd.lower().startswith("ls"):
                     path_part = cmd.replace("ls", "", 1).strip()
-                    tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part))
-                    send_plain(sf, tree)
+                    tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part),sf)
+                    
                 
                 elif cmd == "load":
                     load_html()
@@ -1791,7 +1795,8 @@ def receive_file(conn: socket.socket, save_dir: str = '.') -> bool:
                     continue
 
         # 5. 计算缺失块并告知客户端
-        missing_blocks = [i for i in range(total_blocks+1) if i not in received_blocks]
+        missing_blocks = [i for i in range(total_blocks + 1) if i not in received_blocks]
+        print(missing_blocks)
         send_json(conn, {"type": "missing_blocks", "blocks": missing_blocks})
 
         # 6. 接收缺失块
@@ -1864,6 +1869,9 @@ def receive_file(conn: socket.socket, save_dir: str = '.') -> bool:
             send_json(conn, {"type": "success"})
             return True
         else:
+            for fname in os.listdir(temp_dir):
+                os.remove(os.path.join(temp_dir, fname))
+            os.rmdir(temp_dir)
             # 哈希不一致，保留临时目录以便重试
             send_json(conn, {"type": "failed", "reason": "hash mismatch"})
             return False
