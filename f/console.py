@@ -1,115 +1,28 @@
 import os
+import shutil
 import socket
 import struct
 from time import sleep
 import tqdm
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
+from file_rw import recv_file,send_file
 def update(host,port):
-    a = input('path:')
-    if os.path.isfile(a):
-        upload_file(a,host,port)
+    aa = input('path:')
+    if os.path.isfile(aa):
+        a = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        a.connect(host,port)
+        send_file(a,aa)
 
+def download(h,p):
+    aa = input('path:')
 
-import json
+    a = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    a.connect((h,p))
+    struct.pack('!I', len(aa)) + aa.encode()
+    save_dir = os.path.dirname(aa) if os.path.dirname(aa) else '.'
+    recv_file(a, save_dir,display=True)
 
-import hashlib
-
-
-def recv_msg(sock):
-    raw_len = sock.recv(4)
-    if not raw_len:
-        return None
-    msg_len = struct.unpack('!I', raw_len)[0]
-    data = b''
-    while len(data) < msg_len:
-        chunk = sock.recv(msg_len - len(data))
-        if not chunk:
-            raise ConnectionError("连接中断")
-        data += chunk
-    return data
-
-def send_msg(sock, data):
-    sock.sendall(struct.pack('!I', len(data)))
-    sock.sendall(data)
-
-def send_json(sock, obj):
-    send_msg(sock, json.dumps(obj).encode('utf-8'))
-
-def recv_json(sock):
-    data = recv_msg(sock)
-    if data is None:
-        return None
-    return json.loads(data.decode('utf-8'))
-
-def compute_hash(data):
-    return hashlib.sha256(data).hexdigest()
-
-def upload_file(filepath, host, port, block_size=4096):
-    filename = os.path.basename(filepath)
-    file_size = os.path.getsize(filepath)
-    file_hash = compute_hash(open(filepath, 'rb').read())
-    total_blocks = (file_size + block_size - 1) // block_size 
-    print(total_blocks)
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(30)
-    sock.connect((host, port))
-
-    try:
-        meta = {
-            "type": "meta",
-            "filename": filename,
-            "file_size": file_size,
-            "block_size": block_size,
-            "total_blocks": total_blocks,
-            "file_hash": file_hash
-        }
-        send_json(sock, meta)
-
-        resp = recv_json(sock)
-        assert resp is not None
-        missing_blocks = resp.get('blocks', [])
-        print(f"需要发送 {len(missing_blocks)} 个块")
-
-        with open(filepath, 'rb') as f:
-            for block_id in missing_blocks:
-                offset = block_id * block_size
-                f.seek(offset)
-                data = f.read(block_size)
-
-                header = struct.pack('!II', block_id, len(data))
-                
-                for i in range(1,10):
-                    try:
-                        send_msg(sock, header + data)
-                    except Exception:
-                        print(f"块 {block_id} 发送失败")
-                        sleep(i*2)
-                        continue
-                    
-                    ack= recv_json(sock)
-                    assert ack is not None
-                    if ack.get('type') == 'ack':
-                        print(f"块 {block_id} 发送成功,",total_blocks)
-                        break
-                    else:
-
-                        print(f"块 {block_id} 发送失败")
-                        sleep(i*2)
-                    
-
-        send_json(sock, {"type": "complete"})
-        result = recv_json(sock)
-        assert result is not None
-        if result.get('type') == 'success':
-            print("上传成功且校验通过")
-            return True
-        else:
-            print(f"上传失败: {result.get('reason')}")
-            return False
-    finally:
-        sock.close()
 
 
 
@@ -170,11 +83,11 @@ def login():
                 break
             response += ch
     print('认证结果:', response.decode())
-    return sock,cipher,aa
-sock,cipher,aa = login()
+    return sock,cipher,aa,bb
+sock,cipher,aa,bb = login()
 # 4. 后续命令同样加密发送，明文接收回复
 while True:
-    cmd = input('> ')
+    cmd = input(f'{aa}:{bb}> ')
     if cmd == 'quit':
         cmd = '</c>'
         enc_cmd = cipher.encrypt(cmd.encode())
@@ -203,7 +116,7 @@ while True:
 
     while True:
         try:
-            chunk = sock.recv(8)
+            chunk = sock.recv(2)
         except (socket.timeout, TimeoutError):
             # 超时，认为数据已发送完毕
             break
@@ -214,13 +127,20 @@ while True:
 
         # 输出所有可解码的文本（保留可能不完整的字节在 decoder 内部）
         text = decoder.decode(chunk)
-        if text:
-            print(text, end='')
 
-        # 检查是否收到结束标记
-        if b'</s>' in buffer:
+
+        if b'\4' in buffer:
             received_end = True
             break
+        if text:
+            print(text, end='',flush=True)
+            if cmd == 'update' or cmd == 'download':
+                n = int(text.removesuffix('\x00'))
+                
+            
+
+        # 检查是否收到结束标记
+        
 
     # 如果是因为超时退出但已经收到结束标记，同样正常结束
     # 刷新解码器，输出剩余内容
@@ -233,6 +153,7 @@ while True:
         print("\n[警告] 未收到结束标记 </s>，连接可能异常中断")
     print()
     if cmd == 'update':
-        n = int(resp.decode())
+        
         update(aa,n)
+    if cmd == 'download':download(aa,n)
     
