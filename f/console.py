@@ -3,6 +3,7 @@ import shutil
 import socket
 import struct
 from time import sleep
+import time
 import tqdm
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
@@ -86,8 +87,10 @@ def login():
     return sock,cipher,aa,bb
 sock,cipher,aa,bb = login()
 # 4. 后续命令同样加密发送，明文接收回复
+abibi = time.time()
 while True:
-    cmd = input(f'{aa}:{bb}> ')
+    cmd = input(f'{aa}:{bb} {int((time.time()-abibi)*1000)}ms> ')
+    abibi=time.time()
     if cmd == 'quit':
         cmd = '</c>'
         enc_cmd = cipher.encrypt(cmd.encode())

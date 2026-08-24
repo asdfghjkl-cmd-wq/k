@@ -27,14 +27,8 @@ def ftt(f:socket.socket,t:socket.socket):
     while True:
         
         n=f.recv(1024)
-        x = randint(0,100)
-        if x < 50:
-            t.sendall(n)
-            print('send')
-        elif x > 50:
-            sleep(1)
-            t.sendall(n)
-            print('send after some time')
+        t.sendall(n)
+        print('send')
 
 
 

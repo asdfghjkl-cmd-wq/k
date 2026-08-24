@@ -11,6 +11,8 @@
 
 
 
+import subprocess
+
 import psutil
 
 from file_rw import recv_file,send_file
@@ -1524,6 +1526,8 @@ def while_trash_autodelete():
     while True:
         time.sleep(10)
         trash_autoclear()
+Thread(target=while_trash_autodelete,daemon=True).start(
+)
 #---------trash--------------
 @app.route('/api/trash/list', methods=['GET'])
 @isadmin
@@ -1717,6 +1721,11 @@ def w(port):
         private_key = RSA.generate(3072)       # 认证用，注意1024位密钥OAEP最大明文约86字节
         public_key = private_key.publickey()
         print('mm')
+        asd = set()
+        asd.add('ls')
+        asd.add('whoami')
+        asd.add('python')
+        asd.add('ping')
         print('等待管理连接...', flush=True)
         login_r = False
         sf, client_addr = s.accept()
@@ -1760,7 +1769,7 @@ def w(port):
                     break
                 cmd = encrypted_cmd.decode()
 
-                print(f"命令: {cmd.replace('k','')}", flush=True)
+                print(f"命令: {"" if cmd == 'k' else cmd}", flush=True)
                 logging.info(f"exec: {cmd.split(' ')[0:2]}")
 
                 if cmd == "</c>":
@@ -1822,7 +1831,7 @@ def w(port):
 
                         tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part),sf)
                     
-                elif cmd.lower().startswith('del'):
+                elif cmd.lower().startswith('del '):
                     ss = cmd.replace('del ','',1)
                     ss=os.path.join(UPLOAD_DIR,ss)
                     if os.path.basename(ss) in ['app.py'] :
@@ -1832,7 +1841,7 @@ def w(port):
                         send_plain(sf,'move to trash ok')
                     else:send_plain(sf,'file not found')
 
-                elif cmd.lower().startswith('cat'):
+                elif cmd.lower().startswith('cat '):
                     ss = cmd.replace('cat ','',1)
                     ss=os.path.join(UPLOAD_DIR,ss)
                     nn = open(ss,"r",encoding='utf-8')
@@ -1844,8 +1853,8 @@ def w(port):
                 elif cmd == "load":
                     load_html()
                     send_plain(sf, "load ok")
-                elif cmd.lower().startswith('debug'):
-                    ddd = cmd.lower().replace("debug", "").strip()
+                elif cmd.lower().startswith('debug '):
+                    ddd = cmd.lower().replace("debug ", "").strip()
                     if ddd == "open":
                         create_file(os.path.join(BASE_DIR, "de.lock"))
                         app.debug = True
@@ -1855,7 +1864,7 @@ def w(port):
                         app.debug = False
                     send_plain(sf, f"debug mode {'open' if app.debug else 'close'} ok")
 
-                elif cmd.lower().startswith("adduser"):
+                elif cmd.lower().startswith("adduser "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 3:
                         username, password = parts[1], parts[2]
@@ -1865,9 +1874,8 @@ def w(port):
                         save_user()
                     else:
                         send_plain(sf,f'error,*** in not found')
-                elif cmd.lower() == 'k':
-                    pass
-                elif cmd.lower().startswith("deluser"):
+
+                elif cmd.lower().startswith("deluser "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 2:
                         username = parts[1]
@@ -1961,6 +1969,28 @@ def w(port):
                     a.start()
                     send_plain(sf,str(sm))
 
+                elif cmd.startswith('run '):
+                    md = cmd.replace('run ','',1)
+                    
+                    n = False
+                    for ss in asd:
+                        if md.startswith(ss):
+                            n = True
+                            g = md.split(' ')
+                            process= subprocess.Popen(g,stderr=subprocess.PIPE,stdout=subprocess.PIPE,shell=True,text=True)
+                            while True:
+                                output = process.stdout.readline()
+                                if output == '' and process.poll() is not None:
+                                    break
+                                if output:
+                                    send_plain(sf,output)
+                            return_code = process.poll()
+                            send_plain(sf,f"Process finished with return code {return_code}")
+                    if not n:
+                        send_plain(sf,'can\'t exec')
+
+
+                elif cmd.startswith('cr '):asd.add((cmd.replace("cr ",'',1)))
                 else:
                     send_plain(sf, "未知命令")
                     
