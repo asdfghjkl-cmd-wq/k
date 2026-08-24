@@ -48,7 +48,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Cipher import PKCS1_OAEP, AES
 # 禁用不安全的请求警告（针对 verify=False）
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -1687,28 +1687,44 @@ def recv_exact(sock, n):
         data += packet
     return data
 
-def listen_encrypted(sock, private_key):
-    """
-    接收 长度(4字节大端) + 密文，用私钥解密
-    返回明文字节串
-    """
+# 当前管理连接的 AES-256 会话密钥（每次握手临时生成，不落盘）
+_admin_aes_key = None
+
+def send_enc_frame(sock, key, plaintext: bytes):
+    """发送 AES-256-GCM 加密帧：长度(4字节大端) + nonce(12) + 密文 + tag(16)"""
+    nonce = os.urandom(12)
+    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+    ct, tag = cipher.encrypt_and_digest(plaintext)
+    payload = nonce + ct + tag
+    sock.sendall(struct.pack('>I', len(payload)) + payload)
+
+def recv_enc_frame(sock, key):
+    """接收并解密 AES-256-GCM 加密帧，返回明文字节串；连接关闭返回 None"""
     raw_len = recv_exact(sock, 4)
     if raw_len is None:
-        return b""
+        return None
     length = struct.unpack('>I', raw_len)[0]
-    encrypted = recv_exact(sock, length)
-    if encrypted is None:
-        return b""
-    cipher = PKCS1_OAEP.new(private_key)
-    return cipher.decrypt(encrypted)
+    payload = recv_exact(sock, length)
+    if payload is None:
+        return None
+    if length < 28:   # nonce(12) + tag(16) 是最小帧
+        raise ValueError("非法加密帧长度")
+    nonce, body = payload[:12], payload[12:]
+    ct, tag = body[:-16], body[-16:]
+    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+    return cipher.decrypt_and_verify(ct, tag)
 
 def send_plain(sock, msg: str):
-    """明文发送字符串，末尾加换行符"""
-    
-    sock.sendall((msg + '\0').encode())
+    """发送回复（走 AES-256-GCM 加密通道），末尾加换行符"""
+    key = _admin_aes_key
+    if key is not None:
+        send_enc_frame(sock, key, (msg + '\0').encode())
+    else:
+        # 握手完成前的兜底明文（仅认证阶段可能用到）
+        sock.sendall((msg + '\0').encode())
 
 def w(port):
-    global admin, users, app
+    global admin, users, app, _admin_aes_key
    
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1737,19 +1753,38 @@ def w(port):
             sf.sendall(struct.pack('>I', len(pub_bytes)))
             sf.sendall(pub_bytes)
 
-            # 2. 接收并解密认证信息
-            encrypted_auth = listen_encrypted(sf, private_key)
+            # 2. 接收 RSA-OAEP 加密的 32 字节会话密钥，之后所有流量走 AES-256-GCM
+            raw_len = recv_exact(sf, 4)
+            if raw_len is None:
+                raise ConnectionError("客户端未发送会话密钥")
+            enc_len = struct.unpack('>I', raw_len)[0]
+            enc_key = recv_exact(sf, enc_len)
+            if enc_key is None:
+                raise ConnectionError("会话密钥数据不完整")
+            session_key = PKCS1_OAEP.new(private_key).decrypt(enc_key)
+            if len(session_key) != 32:
+                raise ValueError("会话密钥长度非法")
+            _admin_aes_key = session_key
+
+            # 3. 接收 AES-GCM 加密的认证信息
+            encrypted_auth = recv_enc_frame(sf, session_key)
+            if encrypted_auth is None:
+                raise ConnectionError("客户端未发送认证信息")
             auth_str = encrypted_auth.decode()
             nm = auth_str.split(',')
             send_plain(sf,'ok')
             if nm[0] == admin and check_password_hash(users.get(nm[0], ''), nm[1]):
                 send_plain(sf, "y")
+                send_enc_frame(sf, session_key, b'\4')
                 print('认证成功', flush=True)
                 login_r = True
             else:
                 print(f"认证失败: {nm}", flush=True)
                 send_plain(sf, "n")
+                send_enc_frame(sf, session_key, b'\4')
                 sf.close()
+                _admin_aes_key = None
+                continue
         except Exception as e:
             traceback.print_exc()
             try:
@@ -1763,9 +1798,9 @@ def w(port):
         while login_r:
             try:
                 
-                # 接收加密的命令
-                encrypted_cmd = listen_encrypted(sf, private_key)
-                if not encrypted_cmd:
+                # 接收加密的命令（AES-256-GCM 帧）
+                encrypted_cmd = recv_enc_frame(sf, _admin_aes_key)
+                if encrypted_cmd is None:
                     break
                 cmd = encrypted_cmd.decode()
 
@@ -2011,9 +2046,11 @@ def w(port):
                     break
             finally:
                 try:
-                    sf.sendall(b'\4')
+                    send_enc_frame(sf, _admin_aes_key, b'\4')
                 except:
                     break
+        # 连接关闭后清空会话密钥
+        _admin_aes_key = None
         # 连接关闭后继续等待新连接
 
 def update_file(ip,port):

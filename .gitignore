@@ -35,8 +35,9 @@ as.py
 tui/__pycache__/a.cpython-313.pyc
 test/
 a.log
-f/__pycache__/app.cpython-313.pyc
-.idea/k.iml
+f/__pycache__/
+f/s.py
+f/__pycache__/app.cpython-312.pyc
 .idea/misc.xml
 .idea/modules.xml
 .idea/vcs.xml
