@@ -11,13 +11,15 @@
 
 
 
+import subprocess
+
 import psutil
 
-
+from file_rw import recv_file,send_file
 
 def is_port_in_use(port):
     for conn in psutil.net_connections():
-        if conn.laddr.port == port and conn.status == "LISTEN":
+        if conn.laddr.port == port and conn.status == "LISTEN": # type: ignore
             return True
     return False
 import atexit
@@ -44,10 +46,9 @@ from datetime import datetime
 from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-ascii_lowercase += "0123456789"
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Cipher import PKCS1_OAEP, AES
 # 禁用不安全的请求警告（针对 verify=False）
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -80,6 +81,7 @@ def get_filename_from_url(url):
 
 class tool:
     class u1:
+        @staticmethod
         def call(source_path,chunk_size,output_dir,task_id,cancel_check):
             if os.path.exists(output_dir):
                 if os.path.isdir(output_dir):
@@ -115,7 +117,7 @@ class tool:
 
     class u2:
         def call(dir,tdir,task_id,cancel_check):
-            file = open(os.path.join(dir,"file"),"r",encoding="utf-8")
+            file = open(os.path.join(dir,"file"),"r",encoding="utf-8") # type: ignore
             n = os.path.basename(file.readline().replace("\n",""))
  
             x = int(file.readline().replace("\n",""))
@@ -125,7 +127,7 @@ class tool:
                 if cancel_check():
                     os.remove(bn.name)
                     raise qe("cancel")
-                an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb")
+                an = open(os.path.join(dir,f"{nb:04d}"+".data"),"rb") # type: ignore # type: ignore
                 bn.write(an.read())
                 an.close()
             return True
@@ -143,7 +145,7 @@ def save_user():
     # 存储用户列表
     r.delete("user_list")
     if user_list:
-        r.sadd("user_list", *user_list)
+        r.sadd("user_list", *user_list) # type: ignore
     # 存储黑名单
     r.delete("nigga_list")
     if nigga_list:
@@ -214,7 +216,8 @@ def worker():
                 r.hset(task_key(task_id), 'status', 'finished')
             else:
                 r.hset(task_key(task_id), 'status', 'failed')
-                r.hset(task_key(task_id), 'error', 'unkown')
+                if get_task(task_id).get('error') == '':
+                    r.hset(task_key(task_id), 'error', 'unkown')
 
         except Exception as e:
             traceback.print_exc()
@@ -227,6 +230,12 @@ def worker():
             if is_cancelled(task_id):
                 r.hset(task_key(task_id), 'status', 'cancelled')
         finally:
+            if is_cancelled(task_id):
+                r.hset(task_key(task_id), 'status', 'cancelled')
+                r.hset(task_key(task_id), 'error', 'User cancelled')
+            else:
+                # 保持原有的 failed/finished 逻辑
+                pass
             task_queue.task_done()
 
 for _ in range(MAX_WORKERS):
@@ -241,12 +250,14 @@ if sys.platform.startswith('win'):
     try: locale.setlocale(locale.LC_ALL, 'zh_CN.UTF-8')
     except: pass
 
-def ran_str(length, charset=ascii_lowercase):
+def ran_str(length, charset=ascii_lowercase+'0123456789'):
     return ''.join(random.choice(charset) for _ in range(length))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(BASE_DIR, 'a.html')
-
+TRASH_DIR = os.path.join(BASE_DIR,'trash')
+if not os.path.exists(TRASH_DIR):
+    os.makedirs(TRASH_DIR)
 try:
     with open(os.path.join(BASE_DIR, "s.key"), "r", encoding="utf-8") as s:
         k = s.read()
@@ -254,7 +265,7 @@ except:
     k = ran_str(128, ascii_letters)
     with open(os.path.join(BASE_DIR, "s.key"), "w", encoding="utf-8") as s:
         s.write(k)
-
+open(os.path.join(BASE_DIR, "app.log"),'w',encoding='utf-8').close()
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -577,27 +588,41 @@ def sze(file,od,password,task_id):
         raise ValueError("解压目标路径越权")
     os.makedirs(target_dir, exist_ok=True)
     try:
-        a = pro(target=sece,args=(zp,target_dir,file,password,task_id),daemon=True)
-        return True,a,target_dir
+        sece(zp,target_dir,file,password,task_id)
+        return True,target_dir
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
         if os.path.exists(target_dir) and not os.listdir(target_dir):
             os.rmdir(target_dir)
-        return False,None,target_dir
+        return False,target_dir
+
+
 
 def sece(zp,target_dir,file,password,task_id):
     try:
-        with SevenZipFile(zp,mode="r",password=password) as df:
-            for member in df.list():
-                
+        with SevenZipFile(zp,mode="r",password=password) as zf:
+            members = zf.list()
+            total = len(members)
+            for idx, member in enumerate(members):
+                # 每次解压一个文件前检查取消
+                if is_cancelled(task_id):  # 直接使用 Redis 检查，因为此处拿不到 cancel_check 闭包
+                    # 清理已解压的部分
+                    if os.path.exists(target_dir):
+                        shutil.rmtree(target_dir, ignore_errors=True)
+                    raise qe("解压被取消")
+                # 防 Zip Slip 检查
                 member_path = os.path.realpath(os.path.join(target_dir, member.filename))
                 if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
                     raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-            df.extractall(target_dir)
-            app.logger.info(f"解压完成: {file} -> {target_dir}")
+                # 提取单个文件
+                zf.extract(member, target_dir)
+                # 更新任务进度（可选）
+                update_task_progress(task_id, total=total, current=idx+1)
+        app.logger.info(f"解压完成: {file} -> {target_dir}")
     except Exception as e:
-        save_task(task_id,{'error':str(e)})
-
+        save_task(task_id, {'error': str(e)})
+        raise e
+        
 
 
 
@@ -632,41 +657,66 @@ def zipe(file: str, dir,password,task_id):
     os.makedirs(target_dir, exist_ok=True)
     try:
         if password == "":
-            a =pro(target=zce,args=(zip_path,target_dir,file,task_id),daemon=True)
-        else:a =pro(target=zece,args=(zip_path,target_dir,file,password.encode(),task_id),daemon=True)
-        return True,a,target_dir
+            zce(zip_path,target_dir,file,task_id)
+        else:zece(zip_path,target_dir,file,password.encode(),task_id)
+        return True
     except Exception as e:
         app.logger.error(f"解压失败: {e}")
         if os.path.exists(target_dir) and not os.listdir(target_dir):
             os.rmdir(target_dir)
-        return False,None,target_dir
+        raise e
 
-def zce(zip_path,target_dir,file,task_id):
+def zce(zip_path, target_dir, file, task_id):
     try:
         with zipfile.ZipFile(zip_path, 'r') as zf:
-
-            for member in zf.infolist():
+            members = zf.infolist()
+            total = len(members)
+            for idx, member in enumerate(members):
+                # 每次解压一个文件前检查取消
+                if is_cancelled(task_id):  # 直接使用 Redis 检查，因为此处拿不到 cancel_check 闭包
+                    # 清理已解压的部分
+                    if os.path.exists(target_dir):
+                        shutil.rmtree(target_dir, ignore_errors=True)
+                    raise qe("解压被取消")
+                # 防 Zip Slip 检查
                 member_path = os.path.realpath(os.path.join(target_dir, member.filename))
                 if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
                     raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-            zf.extractall(target_dir)
+                # 提取单个文件
+                zf.extract(member, target_dir)
+                # 更新任务进度（可选）
+                update_task_progress(task_id, total=total, current=idx+1)
         app.logger.info(f"解压完成: {file} -> {target_dir}")
     except Exception as e:
-        save_task(task_id,{'error':str(e)})
+        
+        save_task(task_id, {'error': str(e)})
+        raise e
 
 def zece(zip_path,target_dir,file,password,task_id):
     try:
-        with pyzipper.AESZipFile(zip_path, 'r') as zf:
-            zf.setpassword(password)
-
-            for member in zf.infolist():
-                member_path = os.path.realpath(os.path.join(target_dir, member.filename))
-                if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
-                    raise Exception(f"Zip Slip 攻击检测: {member.filename}")
-            zf.extractall(target_dir)
-        app.logger.info(f"解压完成: {file} -> {target_dir}")
+            with pyzipper.AESZipFile(zip_path, 'r') as zf:
+                zf.setpassword(password)
+                members = zf.infolist()
+                total = len(members)
+                for idx, member in enumerate(members):
+                    # 每次解压一个文件前检查取消
+                    if is_cancelled(task_id):  # 直接使用 Redis 检查，因为此处拿不到 cancel_check 闭包
+                        # 清理已解压的部分
+                        if os.path.exists(target_dir):
+                            shutil.rmtree(target_dir, ignore_errors=True)
+                        raise qe("解压被取消")
+                    # 防 Zip Slip 检查
+                    member_path = os.path.realpath(os.path.join(target_dir, member.filename))
+                    if not member_path.startswith(target_dir + os.sep) and member_path != target_dir:
+                        raise Exception(f"Zip Slip 攻击检测: {member.filename}")
+                    # 提取单个文件
+                    zf.extract(member, target_dir)
+                    # 更新任务进度（可选）
+                    update_task_progress(task_id, total=total, current=idx+1)
+            app.logger.info(f"解压完成: {file} -> {target_dir}")
     except Exception as e:
-        save_task(task_id,{'error':str(e)})
+        save_task(task_id, {'error': str(e)})
+        raise e
 
 def download(url, dir, task_id, cancel_check):
     filepath = None
@@ -882,6 +932,22 @@ def cancel_task(task_id):
         return jsonify({'success': False, 'error': '任务无法取消'}), 400
     return jsonify({'success': True})
 
+@app.route('/api/task/<task_id>/delete', methods=['POST', 'GET'])
+@login_required
+@isadmin
+def webdelete_task(task_id):
+    task = get_task(task_id)          # 直接获取任务对象
+    if not task:
+        return jsonify({'success': False, 'error': '无效任务ID'}), 404
+    status = task.get('status', '')
+    if status == 'running':
+        return jsonify({'success': False, 'error': '任务正在运行，无法删除'}), 403
+    elif status == 'pending':
+        return jsonify({'success': False, 'error': '任务仍在队列中，无法删除'}), 403
+    else:
+        delete_task(task_id)
+        return jsonify({'success': True})
+    
 
 @app.route("/file/move", methods=['POST'])
 @isadmin
@@ -914,36 +980,22 @@ def call_move():
     task_queue.put((task_id, func, arg_list, tool_id))
     return jsonify({'success':True,'task_id':task_id})
 
-def move_file(source,target,task_id,cancel_check):
-    
-
+def move_file(source, target, task_id, cancel_check):
     try:
         src = safe_path(source)
         dst = resolve_target_path(src, target)
-    except ValueError:
-        return "错误: 目录越权", 400
-
-    if not os.path.exists(src):
-        return "源路径不存在", 404
-
-    try:
-        if os.path.isfile(src):
-            # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
-            a = pro(target=shutil.move,args=(src,dst),daemon=True)
-        elif os.path.isdir(src):
-            a = pro(target=shutil.move,args=(src,dst),daemon=True)
-                
-        else:
-            return "源路径类型未知", 400
-        a.start()
-        while a.is_alive():
-            if cancel_check():
-                a.kill()
-                raise qe("移动被取消")
-        return True
-    except Exception as e:
-        logging.error(f"移动失败: {e}")
+    except ValueError as e:
+        save_task(task_id, {'error': str(e)})
         return False
+    # 先复制
+    if copy_file(source, target, task_id, cancel_check):
+        # 复制成功且未被取消，删除源
+        if os.path.isdir(src):
+            shutil.rmtree(src)
+        else:
+            os.remove(src)
+        return True
+    return False
 
         
 @app.route("/file/copy", methods=['POST'])
@@ -980,38 +1032,74 @@ def call_copy():
 
 
 
-def copy_file(source,target,task_id,cancel_check):
-    
-
+def copy_file(source, target, task_id, cancel_check):
     try:
         src = safe_path(source)
         dst = resolve_target_path(src, target)
-    except ValueError:
-        return "错误: 目录越权", 400
+    except ValueError as e:
+        save_task(task_id, {'error': str(e)})
+        return False
 
     if not os.path.exists(src):
-        return "源路径不存在", 404
+        save_task(task_id, {'error': '源路径不存在'})
+        return False
 
     try:
         if os.path.isfile(src):
-            # 移动文件：shutil.move 会自动处理目标为目录或文件的情况
-            a = pro(target=shutil.copy,args=(src,dst),daemon=True)
+            # 确保目标目录存在
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            # 使用分块复制，每复制 1MB 检查一次取消
+            with open(src, 'rb') as f_in, open(dst, 'wb') as f_out:
+                while True:
+                    if cancel_check():
+                        # 取消时删除未完成的目标文件
+                        if os.path.exists(dst):
+                            os.remove(dst)
+                        raise qe("复制被取消")
+                    chunk = f_in.read(1024 * 1024)  # 1MB 块
+                    if not chunk:
+                        break
+                    f_out.write(chunk)
         elif os.path.isdir(src):
-            if os.path.exists(dst):a = pro(target=shutil.copytree,args=(src,os.path.join(dst,os.path.basename(src))),daemon=True)
-
-            else:a = pro(target=shutil.copytree,args=(src,dst),daemon=True)
-                
+            # 递归复制目录（同样需要分块复制每个文件）
+            # 简单起见，可以调用 shutil.copytree，但无法取消。
+            # 更优方案：遍历目录树，对每个文件执行上面的分块复制逻辑，并频繁检查取消。
+            # 此处给出一层简易递归实现：
+            for root, dirs, files in os.walk(src):
+                if cancel_check():
+                    # 清理已复制的内容
+                    if os.path.exists(dst):
+                        shutil.rmtree(dst, ignore_errors=True)
+                    raise qe("复制被取消")
+                rel_path = os.path.relpath(root, src)
+                dest_root = os.path.join(dst, rel_path)
+                os.makedirs(dest_root, exist_ok=True)
+                for file in files:
+                    if cancel_check():
+                        if os.path.exists(dst):
+                            shutil.rmtree(dst, ignore_errors=True)
+                        raise qe("复制被取消")
+                    src_file = os.path.join(root, file)
+                    dst_file = os.path.join(dest_root, file)
+                    # 再次调用分块复制逻辑（或封装为内部函数）
+                    # 为了简洁，这里简化为 shutil.copy2，实际上应替换为分块循环
+                    with open(src_file, 'rb') as f_in, open(dst_file, 'wb') as f_out:
+                        while True:
+                            if cancel_check():
+                                if os.path.exists(dst):
+                                    shutil.rmtree(dst, ignore_errors=True)
+                                raise qe("复制被取消")
+                            chunk = f_in.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            f_out.write(chunk)
         else:
-            return "源路径类型未知", 400
-        a.start()
-        while a.is_alive():
-            if cancel_check():
-                a.kill()
-                raise qe("复制被取消")
+            save_task(task_id, {'error': '源路径类型未知'})
+            return False
         return True
     except Exception as e:
-        logging.error(f"复制失败: {e}")
-        save_task(task_id,{'error':e})
+        traceback.print_exc()
+        save_task(task_id, {'error': str(e)})
         return False
 
     
@@ -1063,23 +1151,17 @@ def zip_ex(f,sp,password,task_id,cancel_check):
     _,n = os.path.splitext(f)
     try:
         if n == ".zip":
-            a,b,target_dir = zipe(f,sp,password,task_id)
+            a = zipe(f,sp,password,task_id)
         elif n == '.7z':
-            a,b,target_dir = sze(f,sp,password,task_id)
+            a = sze(f,sp,password,task_id)
 
         else:
             save_task(task_id,{'error':'not found'})
             return False
         if not a:
-            save_task(task_id,{'error':'error'})
+            if get_task(task_id).get('error') == '':save_task(task_id,{'error':'error'})
             return False
-        b.start()
 
-        while b.is_alive():
-            if cancel_check():
-                if os.path.exists(target_dir) and not os.listdir(target_dir):
-                    os.rmdir(target_dir)
-                raise qe('canceled')
         return True
     except Exception as e:
         traceback.print_exc()
@@ -1310,6 +1392,7 @@ def create_folder():
         logging.error(str(e))
         return jsonify({'success': False, 'error': "see log"}), 500
 
+
 @app.route('/api/delete/<path:item_path>', methods=['DELETE'])
 @isadmin
 @login_required
@@ -1320,26 +1403,42 @@ def delete_item(item_path):
         return jsonify({'success': False, 'error': '路径非法'}), 400
     if not os.path.exists(full):
         return jsonify({'success': False, 'error': '路径不存在'}), 404
+
+    # 生成唯一ID
+    item_id = uuid.uuid4().hex
+    trash_dest = os.path.join(TRASH_DIR, item_id)
+
     try:
+        # 移动文件/文件夹到回收站
+        shutil.move(full, trash_dest)
+
+        # 记录原始路径（相对路径）、类型、删除时间
+        rel_path = os.path.relpath(full, UPLOAD_DIR)
+        meta = {
+            'original_path': rel_path,
+            'is_dir': os.path.isdir(trash_dest),
+            'delete_time': int(time.time())
+        }
+        r.setex(f"trash:{item_id}", 86400 * 10, json.dumps(meta))  # 30天过期
+
+        # 删除原有元数据（可选，如果需要恢复元数据请保留）
+        # 这里保留原有元数据删除逻辑，因为恢复时会重新生成
         if os.path.isfile(full):
-            os.remove(full)
-            rel = os.path.relpath(full, UPLOAD_DIR)
-            meta_file = get_meta_path(rel)
+            meta_file = get_meta_path(rel_path)
             if os.path.exists(meta_file):
                 os.remove(meta_file)
                 meta_dir = os.path.dirname(meta_file)
                 if meta_dir != META_DIR and not os.listdir(meta_dir):
                     os.rmdir(meta_dir)
         else:
-            shutil.rmtree(full)
-            rel = os.path.relpath(full, UPLOAD_DIR)
-            meta_dir = os.path.join(META_DIR, rel)
+            meta_dir = os.path.join(META_DIR, rel_path)
             if os.path.exists(meta_dir):
                 shutil.rmtree(meta_dir)
+
         return jsonify({'success': True})
     except Exception as e:
         logging.error(str(e))
-        return jsonify({'success': False, 'error': ""}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/share/share_put', methods=['POST'])
 @isadmin
@@ -1397,7 +1496,7 @@ def clear_all():
 @app.route('/download/<path:file_path>')
 @login_required
 @isadmin
-def download_file(file_path):
+def web_download_file(file_path):
     try:
         full = safe_path(file_path)
     except ValueError:
@@ -1410,6 +1509,123 @@ def download_file(file_path):
     return resp
 
 
+def trash_autoclear():
+    n = []
+    for name in os.listdir(TRASH_DIR):
+        k = r.get(f'trash:{name}')
+        if not k:
+            trash_path = os.path.join(TRASH_DIR, name)
+            if os.path.exists(trash_path):
+                if os.path.isdir(trash_path):
+                    shutil.rmtree(trash_path)
+                else:
+                    os.remove(trash_path)
+            n.append(name)   
+    return n
+def while_trash_autodelete():
+    while True:
+        time.sleep(10)
+        trash_autoclear()
+Thread(target=while_trash_autodelete,daemon=True).start(
+)
+#---------trash--------------
+@app.route('/api/trash/list', methods=['GET'])
+@isadmin
+@login_required
+def trash_list():
+    items = []
+    keys = r.keys("trash:*")
+    for key in keys:
+        item_id = key.split(':', 1)[-1]
+        meta_json = r.get(key)
+        if not meta_json:
+            continue
+        meta = json.loads(meta_json)
+        trash_path = os.path.join(TRASH_DIR, item_id)
+        if not os.path.exists(trash_path):
+            r.delete(key)  # 清理无效记录
+            continue
+        # 获取文件信息
+        stat = os.stat(trash_path)
+        items.append({
+            'id': item_id,
+            'original_path': meta['original_path'],
+            'is_dir': meta['is_dir'],
+            'size': stat.st_size if not meta['is_dir'] else 0,
+            'delete_time': meta['delete_time'],
+            'name': os.path.basename(meta['original_path'])
+        })
+    # 按删除时间倒序
+    items.sort(key=lambda x: x['delete_time'], reverse=True)
+    return jsonify({'success': True, 'data': items})
+@app.route('/api/trash/restore/<item_id>', methods=['POST'])
+@isadmin
+@login_required
+def trash_restore(item_id):
+    meta_json = r.get(f"trash:{item_id}")
+    if not meta_json:
+        return jsonify({'success': False, 'error': '记录不存在'}), 404
+    meta = json.loads(meta_json)
+    trash_path = os.path.join(TRASH_DIR, item_id)
+    if not os.path.exists(trash_path):
+        r.delete(f"trash:{item_id}")
+        return jsonify({'success': False, 'error': '文件已丢失'}), 404
+
+    original_rel = meta['original_path']
+    target_full = safe_path(original_rel)  # 验证路径安全
+
+    # 如果原路径已存在，则自动重命名（加“_恢复”后缀）
+    if os.path.exists(target_full):
+        base, ext = os.path.splitext(target_full)
+        counter = 1
+        while os.path.exists(f"{base}_恢复{counter}{ext}"):
+            counter += 1
+        target_full = f"{base}_恢复{counter}{ext}"
+        # 更新原始路径（用于后续元数据）
+        original_rel = os.path.relpath(target_full, UPLOAD_DIR)
+
+    try:
+        # 移动回原位置
+        shutil.move(trash_path, target_full)
+        # 删除 Redis 记录
+        r.delete(f"trash:{item_id}")
+        # 重新生成元数据（如果是文件）
+        if not meta['is_dir']:
+            save_meta(original_rel, os.path.basename(target_full), os.path.getsize(target_full))
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(str(e))
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/trash/delete/<item_id>', methods=['DELETE'])
+@isadmin
+@login_required
+def trash_delete(item_id):
+    
+    r.delete(f"trash:{item_id}")
+    return jsonify({'success': True})
+@app.route('/api/trash/clear', methods=['DELETE'])
+@isadmin
+@login_required
+def trash_clear():
+    keys = r.keys("trash:*")
+    for key in keys:
+        item_id = key.split(':', 1)[-1]
+        trash_path = os.path.join(TRASH_DIR, item_id)
+        if os.path.exists(trash_path):
+            if os.path.isdir(trash_path):
+                shutil.rmtree(trash_path)
+            else:
+                os.remove(trash_path)
+        r.delete(key)
+    return jsonify({'success': True})
+
+
+import socket
+import json
+import struct
+import hashlib
+import os
 
 
 @app.errorhandler(404)
@@ -1425,25 +1641,28 @@ def handle_csrf_error(e):
 # ==================== 服务器控制台（调试用） ====================
 from pathlib import Path
 
-def generate_tree(path_str, n=0):
+def generate_tree(path_str,sock, n=0,):
     tree_str = ""
     path = Path(path_str).resolve()
     if not path.exists():
         return f"路径不存在: {path_str}\n"
+    
     try:
         if path.is_file():
-            tree_str += '    |' * n + '-' * 4 + path.name + '\n'
+            send_plain(sock,'    |' * n + '-' * 4 + path.name + '\n')
         elif path.is_dir():
             if n == 0:
-                tree_str += str(path) + '\\\n'
+                send_plain(sock,str(path) + '\\\n')
             else:
-                tree_str += '    |' * n + '-' * 4 + path.name + '\\\n'
+                send_plain(sock,'    |' * n + '-' * 4 + path.name + '\\\n')
             for child in sorted(path.iterdir()):
-                tree_str += generate_tree(str(child), n + 1)
+                
+                tree_str += generate_tree(str(child),sock, n + 1)
     except PermissionError:
-        tree_str += '    |' * n + '-' * 4 + f"[权限不足] {path.name}\n"
+        send_plain(sock,'    |' * n + '-' * 4 + f"[权限不足] {path.name}\n")
     except Exception as e:
-        tree_str += '    |' * n + '-' * 4 + f"[错误: {e}]\n"
+        send_plain(sock,'    |' * n + '-' * 4 + f"[错误: {e}]\n")
+    
     return tree_str
 
 def create_file(filename):
@@ -1455,8 +1674,8 @@ def create_file(filename):
 
 # ==================== 服务器控制台（修复版） ====================
 import struct
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
+
+
 
 def recv_exact(sock, n):
     """精确接收 n 字节数据"""
@@ -1468,29 +1687,45 @@ def recv_exact(sock, n):
         data += packet
     return data
 
-def listen_encrypted(sock, private_key):
-    """
-    接收 长度(4字节大端) + 密文，用私钥解密
-    返回明文字节串
-    """
+# 当前管理连接的 AES-256 会话密钥（每次握手临时生成，不落盘）
+_admin_aes_key = None
+
+def send_enc_frame(sock, key, plaintext: bytes):
+    """发送 AES-256-GCM 加密帧：长度(4字节大端) + nonce(12) + 密文 + tag(16)"""
+    nonce = os.urandom(12)
+    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+    ct, tag = cipher.encrypt_and_digest(plaintext)
+    payload = nonce + ct + tag
+    sock.sendall(struct.pack('>I', len(payload)) + payload)
+
+def recv_enc_frame(sock, key):
+    """接收并解密 AES-256-GCM 加密帧，返回明文字节串；连接关闭返回 None"""
     raw_len = recv_exact(sock, 4)
     if raw_len is None:
-        return b""
+        return None
     length = struct.unpack('>I', raw_len)[0]
-    encrypted = recv_exact(sock, length)
-    if encrypted is None:
-        return b""
-    cipher = PKCS1_OAEP.new(private_key)
-    return cipher.decrypt(encrypted)
+    payload = recv_exact(sock, length)
+    if payload is None:
+        return None
+    if length < 28:   # nonce(12) + tag(16) 是最小帧
+        raise ValueError("非法加密帧长度")
+    nonce, body = payload[:12], payload[12:]
+    ct, tag = body[:-16], body[-16:]
+    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+    return cipher.decrypt_and_verify(ct, tag)
 
 def send_plain(sock, msg: str):
-    """明文发送字符串，末尾加换行符"""
-    sock.sendall((msg + '\0').encode())
+    """发送回复（走 AES-256-GCM 加密通道），末尾加换行符"""
+    key = _admin_aes_key
+    if key is not None:
+        send_enc_frame(sock, key, (msg + '\0').encode())
+    else:
+        # 握手完成前的兜底明文（仅认证阶段可能用到）
+        sock.sendall((msg + '\0').encode())
 
 def w(port):
-    global admin, users, app
-    private_key = RSA.generate(1024)          # 认证用，注意1024位密钥OAEP最大明文约86字节
-    public_key = private_key.publickey()
+    global admin, users, app, _admin_aes_key
+   
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('0.0.0.0', port))
@@ -1498,6 +1733,15 @@ def w(port):
     time.sleep(1)
 
     while True:
+        print('mm',flush=True)
+        private_key = RSA.generate(3072)       # 认证用，注意1024位密钥OAEP最大明文约86字节
+        public_key = private_key.publickey()
+        print('mm')
+        asd = set()
+        asd.add('ls')
+        asd.add('whoami')
+        asd.add('python')
+        asd.add('ping')
         print('等待管理连接...', flush=True)
         login_r = False
         sf, client_addr = s.accept()
@@ -1509,19 +1753,38 @@ def w(port):
             sf.sendall(struct.pack('>I', len(pub_bytes)))
             sf.sendall(pub_bytes)
 
-            # 2. 接收并解密认证信息
-            encrypted_auth = listen_encrypted(sf, private_key)
+            # 2. 接收 RSA-OAEP 加密的 32 字节会话密钥，之后所有流量走 AES-256-GCM
+            raw_len = recv_exact(sf, 4)
+            if raw_len is None:
+                raise ConnectionError("客户端未发送会话密钥")
+            enc_len = struct.unpack('>I', raw_len)[0]
+            enc_key = recv_exact(sf, enc_len)
+            if enc_key is None:
+                raise ConnectionError("会话密钥数据不完整")
+            session_key = PKCS1_OAEP.new(private_key).decrypt(enc_key)
+            if len(session_key) != 32:
+                raise ValueError("会话密钥长度非法")
+            _admin_aes_key = session_key
+
+            # 3. 接收 AES-GCM 加密的认证信息
+            encrypted_auth = recv_enc_frame(sf, session_key)
+            if encrypted_auth is None:
+                raise ConnectionError("客户端未发送认证信息")
             auth_str = encrypted_auth.decode()
             nm = auth_str.split(',')
             send_plain(sf,'ok')
             if nm[0] == admin and check_password_hash(users.get(nm[0], ''), nm[1]):
                 send_plain(sf, "y")
+                send_enc_frame(sf, session_key, b'\4')
                 print('认证成功', flush=True)
                 login_r = True
             else:
                 print(f"认证失败: {nm}", flush=True)
                 send_plain(sf, "n")
+                send_enc_frame(sf, session_key, b'\4')
                 sf.close()
+                _admin_aes_key = None
+                continue
         except Exception as e:
             traceback.print_exc()
             try:
@@ -1534,13 +1797,14 @@ def w(port):
         # 命令处理循环
         while login_r:
             try:
-                # 接收加密的命令
-                encrypted_cmd = listen_encrypted(sf, private_key)
-                if not encrypted_cmd:
+                
+                # 接收加密的命令（AES-256-GCM 帧）
+                encrypted_cmd = recv_enc_frame(sf, _admin_aes_key)
+                if encrypted_cmd is None:
                     break
                 cmd = encrypted_cmd.decode()
 
-                print(f"命令: {cmd}", flush=True)
+                print(f"命令: {"" if cmd == 'k' else cmd}", flush=True)
                 logging.info(f"exec: {cmd.split(' ')[0:2]}")
 
                 if cmd == "</c>":
@@ -1572,17 +1836,60 @@ def w(port):
                                 
                                 filtered[k] = v
                             tasks[tid] = filtered
-                    send_plain(sock=sf,msg=str(task))
+                    send_plain(sock=sf,msg=str(tasks))
+                elif cmd.lower() == 'cleartask':
+                    keys = r.keys(f"{TASK_PREFIX}*")
+                    for key in keys:
+                        if isinstance(key, bytes):
+                            tid = key.decode().split(':', 1)[-1]
+                        else:
+                            tid = key.split(':', 1)[-1]
+                        if get_task(tid).get('status') not in ('running','pending'):
+                            delete_task(tid)
+                            send_plain(sf,f'remove task {tid}\n')
                 elif cmd.lower().startswith("ls"):
                     path_part = cmd.replace("ls", "", 1).strip()
-                    tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part))
-                    send_plain(sf, tree)
-                
+                    if path_part.startswith('-'):
+                        
+                        nn = cmd.split(' ')
+                        sxs = nn[1]
+                        try:
+                            path_part = nn[2]
+                        except IndexError:
+                            path_part = ''
+                        print(nn)
+                        for s in sxs:
+                            if s == 'l':
+                                for n in os.listdir(os.path.join(UPLOAD_DIR,path_part)):send_plain(sf,n+'\n')
+                                pp = os.path.join(UPLOAD_DIR,path_part)
+                    else:
+
+                        tree = generate_tree(os.path.join(BASE_DIR, "uploads", path_part),sf)
+                    
+                elif cmd.lower().startswith('del '):
+                    ss = cmd.replace('del ','',1)
+                    ss=os.path.join(UPLOAD_DIR,ss)
+                    if os.path.basename(ss) in ['app.py'] :
+                        send_plain(sf,'not can remove')
+                    elif os.path.isfile(ss):
+                        shutil.move(ss,TRASH_DIR)
+                        send_plain(sf,'move to trash ok')
+                    else:send_plain(sf,'file not found')
+
+                elif cmd.lower().startswith('cat '):
+                    ss = cmd.replace('cat ','',1)
+                    ss=os.path.join(UPLOAD_DIR,ss)
+                    nn = open(ss,"r",encoding='utf-8')
+                    while True:
+                        t = nn.read(1024)
+                        if not t:
+                            break
+                        send_plain(sf,t)
                 elif cmd == "load":
                     load_html()
                     send_plain(sf, "load ok")
-                elif cmd.lower().startswith('debug'):
-                    ddd = cmd.lower().replace("debug", "").strip()
+                elif cmd.lower().startswith('debug '):
+                    ddd = cmd.lower().replace("debug ", "").strip()
                     if ddd == "open":
                         create_file(os.path.join(BASE_DIR, "de.lock"))
                         app.debug = True
@@ -1592,35 +1899,35 @@ def w(port):
                         app.debug = False
                     send_plain(sf, f"debug mode {'open' if app.debug else 'close'} ok")
 
-                elif cmd.lower().startswith("adduser"):
+                elif cmd.lower().startswith("adduser "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 3:
                         username, password = parts[1], parts[2]
                         users[username] = generate_password_hash(password)
                         user_list.append(username)
-                        send_plain(sf, f"用户 {username} 已添加")
+                        send_plain(sf, f"用户 *** 已添加")
                         save_user()
                     else:
-                        send_plain(sf,f'error,{username} in not found')
+                        send_plain(sf,f'error,*** in not found')
 
-                elif cmd.lower().startswith("deluser"):
+                elif cmd.lower().startswith("deluser "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 2:
                         username = parts[1]
                         if username in users and username in user_list:
                             del users[username]
                             user_list.remove(username)
-                            send_plain(sf, f"用户 {username} 已删除")
+                            send_plain(sf, f"用户 *** 已删除")
                             save_user()
                         elif username in users and username in nigga_list:
                             del users[username]
                             nigga_list.remove(username)
-                            send_plain(sf, f"用户 {username} 已删除")
+                            send_plain(sf, f"用户 *** 已删除")
                             save_user()
                         else:
                             send_plain(sf, "用户不存在")
 
-                elif cmd.lower().startswith("listuser"):
+                elif cmd.lower().startswith("listuser "):
                     info = ["当前用户列表:"]
                     for user in users.keys():
                         role = ""
@@ -1636,45 +1943,45 @@ def w(port):
                     send_plain(sf, "\n".join(info))
                     save_user()
 
-                elif cmd.lower().startswith("addnigga"):
+                elif cmd.lower().startswith("addnigga "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 2:
                         username = parts[1]
                         if username not in users:
-                            send_plain(sf, f"{username} 不存在")
+                            send_plain(sf, f"*** 不存在")
                         elif username not in nigga_list:
                             nigga_list.append(username)
                             if username in user_list:
                                 user_list.remove(username)
-                            send_plain(sf, f"用户 {username} 已移入黑名单")
+                            send_plain(sf, f"用户 *** 已移入黑名单")
                             save_user()
 
-                elif cmd.lower().startswith("delnigga"):
+                elif cmd.lower().startswith("delnigga "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 2:
                         username = parts[1]
                         if username not in users:
-                            send_plain(sf, f"{username} 不存在")
+                            send_plain(sf, f"*** 不存在")
                         elif username in nigga_list:
                             nigga_list.remove(username)
                             if username not in user_list:
                                 user_list.append(username)
-                            send_plain(sf, f"用户 {username} 已移出黑名单")
+                            send_plain(sf, f"用户 *** 已移出黑名单")
                             save_user()
 
-                elif cmd.lower().startswith("setadmin"):
+                elif cmd.lower().startswith("setadmin "):
                     parts = [p for p in cmd.split() if p]
                     if len(parts) == 2:
                         username = parts[1]
                         if username not in users:
-                            send_plain(sf, f"{username} 不存在")
+                            send_plain(sf, f"*** 不存在")
                         elif username in user_list:
 
                             admin = username
-                            send_plain(sf, f"用户 {username} 已设为管理员")
+                            send_plain(sf, f"用户 *** 已设为管理员")
                             save_user()
 
-                elif app.debug and cmd.lower().startswith("get"):
+                elif app.debug and cmd.lower().startswith("get "):
                     parts = cmd.split()
                     try:
                         send_plain(sf, str(globals()[parts[1]]))
@@ -1688,15 +1995,62 @@ def w(port):
                     a = Thread(target=update_file,args=(client_addr,sm),daemon=True)
                     a.start()
                     send_plain(sf,str(sm))
+                elif cmd.lower() == 'download':
+                    while True:
+                        sm = random.randint(6000,6050)
+                        if not is_port_in_use(sm):
+                            break
+                    a = Thread(target=download_file,args=(client_addr,sm),daemon=True)
+                    a.start()
+                    send_plain(sf,str(sm))
+
+                elif cmd.startswith('run '):
+                    md = cmd.replace('run ','',1)
+                    
+                    n = False
+                    for ss in asd:
+                        if md.startswith(ss):
+                            n = True
+                            g = md.split(' ')
+                            process= subprocess.Popen(g,stderr=subprocess.PIPE,stdout=subprocess.PIPE,shell=True,text=True)
+                            while True:
+                                output = process.stdout.readline()
+                                if output == '' and process.poll() is not None:
+                                    break
+                                if output:
+                                    send_plain(sf,output)
+                            return_code = process.poll()
+                            send_plain(sf,f"Process finished with return code {return_code}")
+                    if not n:
+                        send_plain(sf,'can\'t exec')
+
+
+                elif cmd.startswith('cr '):asd.add((cmd.replace("cr ",'',1)))
                 else:
                     send_plain(sf, "未知命令")
+                    
+            
             except Exception as e:
                 traceback.print_exc()
+                with open('error','w',encoding='utf-8') as d:
+                    n = locals().copy()
+                    cc=['private_key','public_key','e']
+                    for x in cc:
+                        n.pop(x)
+
+                    print(n,file=d)
                 logging.error(f"命令执行错误: {e}")
                 try:
                     send_plain(sf, f"error: {e}")
                 except:
                     break
+            finally:
+                try:
+                    send_enc_frame(sf, _admin_aes_key, b'\4')
+                except:
+                    break
+        # 连接关闭后清空会话密钥
+        _admin_aes_key = None
         # 连接关闭后继续等待新连接
 
 def update_file(ip,port):
@@ -1704,44 +2058,33 @@ def update_file(ip,port):
     n.bind(('0.0.0.0',port))
     n.listen(1)
     con,addr = n.accept()
-    if receive_file(conn=con,save_dir=UPLOAD_DIR):
+    if recv_file(con, save_dir=UPLOAD_DIR):
         pass
-    else:print('error')
+    else:print('error',flush=True)
     con.close()
     n.close()
-    
-def receive_file(conn:socket.socket, save_dir='.'):
-    # 1. 接收文件名长度（4字节整数）
-    header = conn.recv(4)
-    if not header:
-        return False
-    filename_len = struct.unpack('!I', header)[0]
-    
-    # 2. 接收文件名
-    filename = conn.recv(filename_len).decode('utf-8')
-    
-    # 3. 接收文件大小（8字节整数）
-    filesize_data = conn.recv(8)
-    filesize = struct.unpack('!Q', filesize_data)[0]
-    
-    # 构建保存路径（防止路径穿越）
-    safe_filename = os.path.basename(filename)
-    filepath = os.path.join(save_dir, safe_filename)
-    
-    print(f"Receiving file: {safe_filename} ({filesize} bytes)")
-    
-    # 4. 接收文件内容
-    received = 0
-    with open(filepath, 'wb') as f:
-        while received < filesize:
-            data = conn.recv(min(8192, filesize - received))
-            if not data:
-                break
-            f.write(data)
-            received += len(data)
-    
-    print(f"File saved to {filepath}")
-    return received == filesize
+
+def download_file(ip,port):
+    n = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    n.bind(('0.0.0.0',port))
+    n.listen(1)
+    con,addr = n.accept()
+    # 客户端发送：struct.pack('!I', len(name)) + name.encode()
+    # 服务端接收：
+    name_len = struct.unpack('!I', con.recv(4))[0]
+    name = b''
+    while len(name) < name_len:
+        name += con.recv(name_len - len(name))
+    file_path= name.decode()
+    if send_file(con, file_path):
+        pass
+    else:print('error',flush=True)
+    con.close()
+    n.close()
+
+
+
+
 LOCK_DIR = os.path.join(BASE_DIR, '.admin_port_lock')
 
 def try_acquire_admin_lock():
@@ -1764,6 +2107,7 @@ if __name__ == '__main__':
         sm = random.randint(6000,6050)
         if not is_port_in_use(sm):
             break
+    
     r.set('man_port',sm)
     print(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}",flush=True)
     logging.info(f"管理端口链接:{socket.gethostbyname(socket.gethostname())}:{sm}")
