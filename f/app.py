@@ -141,7 +141,7 @@ def save_user():
     """将用户数据存入 Redis"""
     # 存储密码哈希
     if users:
-        r.hset("users", mapping=users)   # {"username": "hash"}
+        r.hset("users", mapping=users)   # type: ignore # {"username": "hash"}
     # 存储用户列表
     r.delete("user_list")
     if user_list:
@@ -151,7 +151,7 @@ def save_user():
     if nigga_list:
         r.sadd("nigga_list", *nigga_list)
     # 存储管理员
-    r.set("admin", admin)
+    r.set("admin", admin) # type: ignore
     print('save ok', flush=True)
 
 def load_user():
@@ -216,6 +216,7 @@ def worker():
                 r.hset(task_key(task_id), 'status', 'finished')
             else:
                 r.hset(task_key(task_id), 'status', 'failed')
+                
                 if get_task(task_id).get('error') == '':
                     r.hset(task_key(task_id), 'error', 'unkown')
 
@@ -815,6 +816,14 @@ def loginok():
             if session.get("user_id") == sa:
                 la = False
     return jsonify({"login":lo,"admin":la,"name":name})
+
+@app.route('/check')
+def admin_or_no_user():
+    if 'user_id' not in session or session.get('user_id') not in list(users.keys()):return 'Non-user',401
+    else:
+        if session.get('user_id') == admin:
+            return 'admin',200
+        else:return 'user',403
 
 @app.route("/api/gdl")
 @login_required
@@ -1725,7 +1734,7 @@ def send_plain(sock, msg: str):
 
 def w(port):
     global admin, users, app, _admin_aes_key
-   
+    process = None
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('0.0.0.0', port))
@@ -1737,11 +1746,15 @@ def w(port):
         private_key = RSA.generate(3072)       # 认证用，注意1024位密钥OAEP最大明文约86字节
         public_key = private_key.publickey()
         print('mm')
-        asd = set()
-        asd.add('ls')
-        asd.add('whoami')
-        asd.add('python')
-        asd.add('ping')
+        asd =r.smembers('command')
+        if not asd:
+            r.sadd('command','ping')
+            r.sadd('command','python')
+            r.sadd('command','python3')
+            r.sadd('command','ls')
+            r.sadd('command','echo')
+            asd =r.smembers('command')
+
         print('等待管理连接...', flush=True)
         login_r = False
         sf, client_addr = s.accept()
@@ -1772,7 +1785,6 @@ def w(port):
                 raise ConnectionError("客户端未发送认证信息")
             auth_str = encrypted_auth.decode()
             nm = auth_str.split(',')
-            send_plain(sf,'ok')
             if nm[0] == admin and check_password_hash(users.get(nm[0], ''), nm[1]):
                 send_plain(sf, "y")
                 send_enc_frame(sf, session_key, b'\4')
@@ -1793,7 +1805,7 @@ def w(port):
                 pass
             sf.close()
             continue
-
+        
         # 命令处理循环
         while login_r:
             try:
@@ -1927,7 +1939,7 @@ def w(port):
                         else:
                             send_plain(sf, "用户不存在")
 
-                elif cmd.lower().startswith("listuser "):
+                elif cmd.lower()==("listuser"):
                     info = ["当前用户列表:"]
                     for user in users.keys():
                         role = ""
@@ -1986,7 +1998,16 @@ def w(port):
                     try:
                         send_plain(sf, str(globals()[parts[1]]))
                     except KeyError:
-                        send_plain(sf, f"变量 {parts[1]} 不存在")
+                        try:
+                            send_plain(sf, str(locals()[parts[1]]))
+                        except KeyError:
+                            send_plain(sf, f"变量 {parts[1]} 不存在")
+
+                elif cmd.lower() == 'clearlog':        
+                    open(os.path.join(BASE_DIR,app.log),'w',encoding='utf-8').close()
+                    send_plain(sf,'log clear')
+                    if os.path.exists(os.path(BASE_DIR,'error')):os.remove(os.path(BASE_DIR,'error'))
+                    send_plain(sf,'Error stack is clear')
                 elif cmd.lower() == 'update':
                     while True:
                         sm = random.randint(6000,6050)
@@ -2023,25 +2044,36 @@ def w(port):
                             send_plain(sf,f"Process finished with return code {return_code}")
                     if not n:
                         send_plain(sf,'can\'t exec')
+                elif cmd.lower( ) == 'export':
+                    raise Exception('export')
 
-
-                elif cmd.startswith('cr '):asd.add((cmd.replace("cr ",'',1)))
+                elif cmd.startswith('cr '):r.sadd('command',(cmd.replace("cr ",'',1)));asd = r.smembers('command')
                 else:
                     send_plain(sf, "未知命令")
                     
             
             except Exception as e:
                 traceback.print_exc()
-                with open('error','w',encoding='utf-8') as d:
-                    n = locals().copy()
-                    cc=['private_key','public_key','e']
-                    for x in cc:
-                        n.pop(x)
+                try:
+                    with open(os.path.join(BASE_DIR,'error'),'w',encoding='utf-8') as d:
+                        n = locals().copy()
+                        cc=['private_key','public_key','pub_bytes','session_key','enc_key','e']
+                        for x in cc:
+                            n.pop(x)
 
-                    print(n,file=d)
+                        print(n,file=d)
+                        print(traceback.format_exc(),file=d)
+                except Exception as en:
+                    try:
+                        send_plain(sf, f"error: {en}\n")
+                    except:
+                        break
+                if not process is None:
+                    if process.poll() is None:
+                        process.terminate()
                 logging.error(f"命令执行错误: {e}")
                 try:
-                    send_plain(sf, f"error: {e}")
+                    send_plain(sf, f"error: {e}\n")
                 except:
                     break
             finally:
@@ -2126,5 +2158,10 @@ else:
         r.set('man_port',sm)
         s = Thread(target=w, daemon=True, args=(sm,))
         s.start()
+        while True:
+            if s.is_alive():
+                s = Thread(target=w, daemon=True, args=(sm,))
+                s.start()
+            time.sleep(5)
         atexit.register(ss)
     else:pass
