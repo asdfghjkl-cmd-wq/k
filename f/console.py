@@ -1,13 +1,20 @@
-import os
+import os,sys
 import socket
 import struct
 from time import sleep
 import time
-import tqdm
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, AES
 from file_rw import recv_file, send_file
-
+from threading import Thread,Event
+import select
+try:
+    import msvcrt          # Windows 下用 kbhit 做可打断的 stdin 轮询
+    _HAS_KBHIT = True
+except ImportError:
+    _HAS_KBHIT = False
+import stun
+_,b,_=stun.get_ip_info(stun_host="stun1.l.google.com",stun_port=19302)
 def recv_exact(sock, n):
     """精确接收 n 字节数据"""
     data = b''
@@ -42,8 +49,8 @@ def recv_enc_frame(sock, key):
     cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
     return cipher.decrypt_and_verify(ct, tag)
 
-def recv_reply(sock, key):
-    """读取回复，直到收到 \4 结束帧或连接关闭"""
+def recv_reply(sock, key, echo=True):
+    """读取回复，直到收到 \4 结束帧；echo=True 时边收边打印，实现实时输出"""
     out = b''
     while True:
         frame = recv_enc_frame(sock, key)
@@ -52,7 +59,50 @@ def recv_reply(sock, key):
         if frame == b'\4':
             break
         out += frame
+        if echo:
+            _echo(frame)
     return out
+
+def _echo(frame):
+    """打印一帧内容（去掉 \0 结尾）；优先 utf-8，失败按本地代码页(gbk)解码"""
+    data = frame.replace(b'\0', b'')
+    if not data:
+        return
+    try:
+        text = data.decode('utf-8')
+    except UnicodeDecodeError:
+        text = data.decode('gbk', errors='replace')
+    if text:
+        print(text, end='', flush=True)
+
+def stdin_u(sock:socket.socket,e:Event,key):
+    """终端输入线程：读取本地 stdin 并加密发送；输入 exit 或 Ctrl-D 时发送 EOT 结束终端。
+    Windows 用 msvcrt.kbhit、Unix 用 select 轮询，以便停止事件能及时打断阻塞。"""
+    buf = ''
+    while not e.is_set():
+        if _HAS_KBHIT:
+            if not msvcrt.kbhit():
+                time.sleep(0.05)
+                continue
+        else:
+            if not select.select([sys.stdin], [], [], 0.2)[0]:
+                continue
+        n = sys.stdin.read(1)
+        if not n:
+            break
+        buf += n
+        if buf.endswith('exit\n') or '\x04' in buf:
+            send_enc_frame(sock, key, b'\4')
+            break
+        send_enc_frame(sock, key, n.encode())
+
+def bash(sock:socket.socket,key):
+    a = Event()
+    t= Thread(target=stdin_u,args=(sock,a,key))
+    t.start()
+    recv_reply(sock,key)
+    a.set()
+
 
 def update(host, port):
     aa = input('path:')
@@ -102,12 +152,12 @@ def login():
     p = input('password:')
     if n == "" and p == "":
         p = n = 'admin'
-    send_enc_frame(sock, session_key, f'{n},{p}'.encode())
+    send_enc_frame(sock, session_key, f'{n},{p},{b}'.encode())
 
     # 4. 接收认证结果（AES-GCM 帧，直到 \4 结束）
     sock.settimeout(10)
     try:
-        response = recv_reply(sock, session_key)
+        response = recv_reply(sock, session_key, echo=False)
     except Exception:
         sock.shutdown(socket.SHUT_RDWR)
         sock.close()
@@ -120,29 +170,48 @@ sock, session_key, aa, bb = login()
 # 后续命令全部走 AES-256-GCM 加密帧
 abibi = time.time()
 while True:
+    ma = sock.recv(10)
+    if ma == b'b':
+        bash(sock,session_key)
     cmd = input(f'{aa}:{bb} {int((time.time()-abibi)*1000)}ms> ')
     abibi = time.time()
     if cmd == 'quit':
         cmd = '</c>'
         send_enc_frame(sock, session_key, cmd.encode())
-        resp = recv_reply(sock, session_key)
-        print(resp.decode())
+        recv_reply(sock, session_key)   # 已实时打印
         exit(0)
     if cmd == "":
         cmd = "k"
 
     send_enc_frame(sock, session_key, cmd.encode())
-    resp = recv_reply(sock, session_key)
+    if cmd.startswith('run term'):
+        # 先收确认帧：服务端真正进入终端模式（发 \x02TERM）才启动 stdin 输入线程；
+        # 否则（如命令不在白名单）按普通回复处理，避免后台 stdin 线程污染后续命令。
+        stop = Event()
+        first = recv_enc_frame(sock, session_key)
+        if first is not None and first.startswith(b'\x02TERM'):
+            t = Thread(target=stdin_u, args=(sock, stop, session_key), daemon=True)
+            t.start()
+        elif first is not None:
+            _echo(first)
+        while True:
+            frame = recv_enc_frame(sock, session_key)
+            if frame is None or frame == b'\4':
+                break
+            _echo(frame)
+        stop.set()
+        continue
+    resp = recv_reply(sock, session_key)   # 边收边打印
     text = resp.replace(b'\0', b'').decode('utf-8', errors='replace')
-    if text:
-        print(text, end='', flush=True)
-        if cmd == 'update' or cmd == 'download':
-            try:
-                n = int(text.strip())
-                if cmd == 'update':
-                    update(aa, n)
-                else:
-                    download(aa, n)
-            except ValueError:
-                pass
+    if cmd == 'update' or cmd == 'download':
+        try:
+            n = int(text.strip())
+            if cmd == 'update':
+                send_enc_frame(sock,session_key,b.encode())
+                update(aa, n)
+            else:
+                send_enc_frame(sock,session_key,b.encode())
+                download(aa, n)
+        except ValueError:
+            pass
     print()

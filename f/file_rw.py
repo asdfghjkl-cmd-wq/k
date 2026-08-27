@@ -122,7 +122,7 @@ def send_file(sock: socket.socket, filepath: str, block_size: int = 1024 * 1024)
         sock.close()
 
 
-def recv_file(sock: socket.socket, save_dir: str = '.', display = False,block_size: int = 1024 * 1024) -> bool:
+def recv_file(sock: socket.socket, save_dir: str = '.', display = False, block_size: int = 1024 * 1024, max_size: int = None) -> bool:
     """
     接收端：从 socket 接收文件，支持断点续传和整体哈希校验。
     注意：block_size 参数仅用于与发送端保持一致，实际接收时使用发送端提供的 block_size。
@@ -132,11 +132,15 @@ def recv_file(sock: socket.socket, save_dir: str = '.', display = False,block_si
         meta = recv_json(sock)
         if meta is None or meta.get('type') != 'meta':
             raise ValueError("期望接收元信息消息")
-        filename = meta['filename']
+        filename = os.path.basename(meta['filename'])  # 防路径穿越
         file_size = meta['file_size']
         block_size = meta['block_size']          # 使用发送端指定的块大小
         total_blocks = meta['total_blocks']
         file_hash = meta['file_hash']
+
+        if max_size is not None and file_size > max_size:
+            send_json(sock, {"type": "failed", "reason": "file too large"})
+            return False
 
         os.makedirs(save_dir, exist_ok=True)
         temp_dir = os.path.join(save_dir, f"{filename}.parts")
