@@ -1803,14 +1803,14 @@ def w(port,lock:filelock.FileLock):
     while True:
         private_key = RSA.generate(3072)       # 认证用，注意1024位密钥OAEP最大明文约86字节
         public_key = private_key.publickey()
-        asd =r.smembers('command')
-        if not asd:
+        
+        if not r.smembers('command'):
             r.sadd('command','ping')
             r.sadd('command','python')
             r.sadd('command','python3')
             r.sadd('command','ls')
             r.sadd('command','echo')
-            asd =r.smembers('command')
+
 
         print('等待管理连接...', flush=True)
         login_r = False
@@ -2141,7 +2141,7 @@ def w(port,lock:filelock.FileLock):
                         send_plain(sf, 'can\'t exec')
                         continue
                     exe = shutil.which(tokens[0])
-                    if tokens[0] not in asd or exe is None:
+                    if tokens[0] not in r.smembers('command') or exe is None:
                         send_plain(sf, 'can\'t exec')
                     else:
                         # 通知客户端已进入终端模式（客户端据此决定是否启动 stdin 输入线程）
@@ -2201,12 +2201,12 @@ def w(port,lock:filelock.FileLock):
                 elif cmd.lower( ) == 'export':
                     raise Exception('export')
                 elif cmd.lower() == 'runlist':
-                    send_plain(sf,str(asd))
+                    send_plain(sf,str(r.smembers('command')))
                 elif cmd.startswith('cr ') and app.debug:
                     cmd_name = cmd.replace("cr ", '', 1).strip()
                     if cmd_name and ' ' not in cmd_name and shutil.which(cmd_name):
                         r.sadd('command', cmd_name)
-                        asd = r.smembers('command')
+                        r.smembers('command')
                         send_plain(sf, f'command {cmd_name} added')
                     else:
                         send_plain(sf, 'can\'t add command')
