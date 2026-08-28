@@ -62,3 +62,5 @@ f/_dms/mailserver.env
 f/_dms/postfix-main.cf
 f/_dms/dns_add.py
 f/_dms/sync_cert.sh
+f/_dms/configure_env.sh
+f/_dms/switch_app_qq.sh

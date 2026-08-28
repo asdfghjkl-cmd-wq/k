@@ -47,6 +47,7 @@ from datetime import datetime
 from urllib.parse import quote
 from werkzeug.security import generate_password_hash, check_password_hash
 from email.message import EmailMessage
+from email.utils import make_msgid, formatdate
 from functools import wraps
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from Crypto.PublicKey import RSA
@@ -70,10 +71,9 @@ except Exception as e:
     print(f"[FATAL] Redis 连接失败: {e}", flush=True)
     raise SystemExit(f"Redis 连接失败: {e}")
 
-# debug open 二次口令：环境变量 DEBUG_PASSWORD（别名 dp）单独配置。
-# 未配置时禁止开启 debug —— 管理员登录口令不能直接开启调试模式（纵深防御）。
-DEBUG_PASSWORD = os.environ.get('DEBUG_PASSWORD', os.environ.get('dp', None))
-DEBUG_PASSWORD_HASH = generate_password_hash(DEBUG_PASSWORD) if DEBUG_PASSWORD else None
+# debug open 邮件验证:向管理员绑定邮箱发送一次性验证码(10 分钟有效)
+DEBUG_CODE_TTL = 600
+DEBUG_CODE_PREFIX = 'debug_code:'
 
 # ==================== 邮件 / 密码找回 ====================
 # SMTP 通过环境变量注入(与 REDIS_PASSWORD 同风格);发件人默认 no-reply@www.goodlink.website
@@ -1126,6 +1126,9 @@ def _send_mail(to_addr, subject, text, html=None):
     msg['From'] = MAIL_FROM
     msg['To'] = to_addr
     msg['Subject'] = subject
+    # 标准邮件头:缺 Message-ID/Date 会被 amavis 判为 BAD-HEADER 拦截
+    msg['Message-ID'] = make_msgid(domain=MAIL_FROM.split('@')[-1])
+    msg['Date'] = formatdate(localtime=True)
     msg.set_content(text)
     if html:
         msg.add_alternative(html, subtype='html')
@@ -2471,23 +2474,36 @@ def _admin_command_loop(sock, session_key):
             elif cmd.lower().startswith('debug '):
                 ddd = cmd.lower().replace("debug ", "").strip()
                 if ddd == "open":
-                    # 二次口令保护：必须显式携带 `debug open <口令>` 才能开启
-                    if DEBUG_PASSWORD_HASH:
-                        send_plain(sock, "debug open requires password: debug open <password>", session_key)
+                    # 邮件验证:向管理员绑定邮箱发送一次性验证码
+                    admin_mail = user_emails.get(admin, '')
+                    if not admin_mail or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', admin_mail):
+                        send_plain(sock, "debug open refused: 管理员未绑定邮箱,请先用 setmail 绑定", session_key)
                     else:
-                        send_plain(sock, "debug open refused: DEBUG_PASSWORD not configured", session_key)
+                        code = f"{secrets.randbelow(1000000):06d}"
+                        r.set(DEBUG_CODE_PREFIX + code, admin, ex=DEBUG_CODE_TTL)
+                        try:
+                            _send_mail(admin_mail, "开启调试模式验证码",
+                                       f"你的调试模式验证码是: {code}\n{DEBUG_CODE_TTL // 60} 分钟内有效,请勿泄露。\n-- {SITE_URL}",
+                                       f"<p>你的调试模式验证码是: <b>{code}</b></p>"
+                                       f"<p>{DEBUG_CODE_TTL // 60} 分钟内有效,请勿泄露。</p>")
+                            send_plain(sock, f"验证码已发送至 {admin_mail}({DEBUG_CODE_TTL // 60}分钟内有效),请用 debug open <验证码> 完成验证", session_key)
+                        except Exception as e:
+                            logging.error(f"debug 验证码邮件发送失败: {e}")
+                            r.delete(DEBUG_CODE_PREFIX + code)
+                            send_plain(sock, "验证码邮件发送失败,请稍后再试", session_key)
                 elif ddd.startswith("open "):
                     parts = ddd.split(None, 1)
-                    pwd = parts[1] if len(parts) == 2 else ''
-                    if DEBUG_PASSWORD_HASH and check_password_hash(DEBUG_PASSWORD_HASH, pwd):
+                    code = parts[1] if len(parts) == 2 else ''
+                    if code and r.get(DEBUG_CODE_PREFIX + code):
+                        r.delete(DEBUG_CODE_PREFIX + code)   # 一次性:用完即失效
                         create_file(os.path.join(BASE_DIR, "de.lock"))
                         app.debug = True
                         send_plain(sock, "debug mode open ok", session_key)
                     else:
-                        # 口令错误：节流 + 日志（不输出明文口令）
-                        print(f"debug open 口令错误: client={sock.getpeername()}", flush=True)
+                        # 验证码错误/过期:节流 + 日志(不输出验证码明文)
+                        print(f"debug open 验证码错误: client={sock.getpeername()}", flush=True)
                         time.sleep(1)
-                        send_plain(sock, "debug open refused: wrong password", session_key)
+                        send_plain(sock, "debug open refused: 验证码错误或已过期", session_key)
                 elif ddd == "close":
                     if os.path.exists(os.path.join(BASE_DIR, "de.lock")):
                         os.remove(os.path.join(BASE_DIR, "de.lock"))
