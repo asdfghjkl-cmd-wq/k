@@ -1895,7 +1895,7 @@ def w(port,lock:filelock.FileLock):
                     sf.shutdown(socket.SHUT_RDWR)
                     sf.close()
                     break
-                if cmd in ("exit", "\\", "q"):
+                if cmd in ("exit",):
                     keys = r.scan_iter(match=f"{TASK_PREFIX}*")
                     for key in keys:
                         cancel_task_by_id(key)
