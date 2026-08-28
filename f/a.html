@@ -75,7 +75,7 @@ body{font-family:'Segoe UI',Roboto,sans-serif;background:#f5f5f5;padding:20px}
 </head>
 <body>
 <div class="container">
-<div class="header"><h1>📁 文件管理</h1><div><span>欢迎, {{ username }} | </span><a href="/logout">退出</a></div></div>
+<div class="header"><h1>📁 文件管理</h1><div><span>欢迎, {{ username }} | </span><span id="scopeSwitch"></span><a href="/logout">退出</a></div></div>
 <div class="main">
 <div class="breadcrumb" id="breadcrumb"><a onclick="nav('')">根目录</a></div>
 
@@ -244,11 +244,31 @@ function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 }
 
+// ========== 共享盘/个人盘 ==========
+function isPersonal() {
+  return location.pathname === '/p' || location.pathname.startsWith('/p/');
+}
+function apiUrl(url) {
+  if (isPersonal() && typeof url === 'string' && url.startsWith('/') && !url.startsWith('/p')) {
+    return '/p' + url;
+  }
+  return url;
+}
+function renderScopeSwitch() {
+  const el = document.getElementById('scopeSwitch');
+  if (!el) return;
+  if (isPersonal()) {
+    el.innerHTML = '<span style="color:#ffd700">[个人盘]</span> <a href="/" style="color:#fff">切到共享盘</a> | ';
+  } else {
+    el.innerHTML = '<span>[共享盘]</span> <a href="/p" style="color:#ffd700">切到个人盘</a> | ';
+  }
+}
+
 function csrfFetch(url, options = {}) {
   if (!options.headers) options.headers = {};
   options.headers['X-CSRFToken'] = getCsrfToken();
   options.credentials = 'same-origin';
-  return fetch(url, options);
+  return fetch(apiUrl(url), options);
 }
 
 // ========== 初始化事件绑定 ==========
@@ -313,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   get_du();
   refresh();
+  renderScopeSwitch();
   loadDownloadTasks();   // 自动加载下载任务进度
 });
 
@@ -450,7 +471,7 @@ function uploadFileWithProgress(file, folder, progressItemDiv) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', folder);
-    xhr.open('POST', '/file/upload', true);
+    xhr.open('POST', apiUrl('/file/upload'), true);
     xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
 
     const progressInner = progressItemDiv.querySelector('.progress-inner');
@@ -543,7 +564,7 @@ function renderFileList(items) {
                 </div>
                 <button class="btn btn-outline btn-small" onclick="share('${itemPath.replace(/'/g, "\\'")}')">生成分享链接</button>
                 <button class="btn btn-small" onclick="file2_call('${itemPath.replace(/'/g, "\\'")}', 'dir')">操作</button>
-                <a href="/download/${encodeURIComponent(itemPath)}" class="btn btn-outline btn-small">下载</a>
+                <a href="${apiUrl('/download/' + encodeURIComponent(itemPath))}" class="btn btn-outline btn-small">下载</a>
                 <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'file')">删除</button>
               </div>`;
     }else {
@@ -556,7 +577,7 @@ function renderFileList(items) {
                 </div>
                 <button class="btn btn-outline btn-small" onclick="share('${itemPath.replace(/'/g, "\\'")}')">生成分享链接</button>
                 <button class="btn btn-small" onclick="file_call('${itemPath.replace(/'/g, "\\'")}', 'dir')">操作</button>
-                <a href="/download/${encodeURIComponent(itemPath)}" class="btn btn-outline btn-small">下载</a>
+                <a href="${apiUrl('/download/' + encodeURIComponent(itemPath))}" class="btn btn-outline btn-small">下载</a>
                 <button class="btn btn-danger btn-small" onclick="deleteItem('${itemPath.replace(/'/g, "\\'")}', 'file')">删除</button>
               </div>`;
     }

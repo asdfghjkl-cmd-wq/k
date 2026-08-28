@@ -64,3 +64,4 @@ f/_dms/dns_add.py
 f/_dms/sync_cert.sh
 f/_dms/configure_env.sh
 f/_dms/switch_app_qq.sh
+f/_dms/test_resend_conn.sh

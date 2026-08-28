@@ -104,17 +104,25 @@ def bash(sock:socket.socket,key):
     a.set()
 
 
-def update(host, port):
+def _send_token(sock, token):
+    """发送传输连接认证 token:长度(4)+token 字节。"""
+    data = token.encode()
+    sock.sendall(struct.pack('!I', len(data)) + data)
+
+
+def update(host, port, token):
     aa = input('path:')
     if os.path.isfile(aa):
         a = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         a.connect((host, port))
+        _send_token(a, token)
         send_file(a, aa)
 
-def download(h, p):
+def download(h, p, token):
     aa = input('path:')
     a = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     a.connect((h, p))
+    _send_token(a, token)
     a.sendall(struct.pack('!I', len(aa)) + aa.encode())
     save_dir = os.path.dirname(aa) if os.path.dirname(aa) else '.'
     recv_file(a, save_dir, display=True)
@@ -202,16 +210,18 @@ while True:
         stop.set()
         continue
     resp = recv_reply(sock, session_key)   # 边收边打印
-    text = resp.replace(b'\0', b'').decode('utf-8', errors='replace')
+    text = resp.replace(b'\0', b'').decode('utf-8', errors='replace').strip()
     if cmd == 'update' or cmd == 'download':
+        # 服务端回复 "端口:一次性token",传输连接须先出示 token
         try:
-            n = int(text.strip())
+            port_str, tok = text.split(':', 1)
+            n = int(port_str)
             if cmd == 'update':
                 send_enc_frame(sock,session_key,b.encode())
-                update(aa, n)
+                update(aa, n, tok)
             else:
                 send_enc_frame(sock,session_key,b.encode())
-                download(aa, n)
-        except ValueError:
+                download(aa, n, tok)
+        except (ValueError, TypeError):
             pass
     print()
