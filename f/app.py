@@ -14,7 +14,7 @@
 import subprocess
 
 import psutil,ipaddress
-
+import filelock
 from file_rw import recv_file,send_file
 
 def is_port_in_use(port):
@@ -22,9 +22,9 @@ def is_port_in_use(port):
         if conn.laddr.port == port and conn.status == "LISTEN": # type: ignore
             return True
     return False
-import atexit
-import hashlib
 
+import hashlib
+import atexit
 
 from py7zr import SevenZipFile
 from markupsafe import escape
@@ -1790,7 +1790,7 @@ def stdin_shell(popen:subprocess.Popen,sock:socket.socket,event:Event):
             break
 
 
-def w(port):
+def w(port,lock:filelock.FileLock):
     global admin, users, app, _admin_aes_key
     process = None
     # 认证失败限流键前缀（Redis 存储，1 小时过期）
@@ -2238,6 +2238,8 @@ def w(port):
                     send_plain(sf, f"error: {e}\n")
                 except:
                     break
+            except KeyboardInterrupt:
+                lock.release()
             finally:
                 try:
                     send_enc_frame(sf, _admin_aes_key, b'\4')
@@ -2290,20 +2292,10 @@ def download_file(ip,port):
         con.close()
         n.close()
 
+lock = filelock.SoftFileLock('.admin_lock')
 
 
 
-LOCK_DIR = os.path.join(BASE_DIR, '.admin_port_lock')
-
-def try_acquire_admin_lock():
-    try:
-        os.mkdir(LOCK_DIR)        # 目录创建是原子操作，失败则已存在
-        return True
-    except FileExistsError:
-        return False
-
-def ss():
-    os.rmdir(LOCK_DIR)
 
 
 if __name__ == '__main__':
@@ -2323,8 +2315,9 @@ if __name__ == '__main__':
     s.start()
     app.run("0.0.0.0", 5000, use_reloader=False,use_evalex=False)
 else:
-    if try_acquire_admin_lock():
+    try:
         # 本 worker 抢到了锁，负责启动管理端口
+        lock.acquire(timeout=1)
         while True:
             sm = random.randint(6000, 6050)
             if not is_port_in_use(sm):
@@ -2332,13 +2325,10 @@ else:
         print(f"管理端口链接: {socket.gethostbyname(socket.gethostname())}:{sm}", flush=True)
         logging.info(f"管理端口链接: {socket.gethostbyname(socket.gethostname())}:{sm}")
         r.set('man_port',sm)
-        s = Thread(target=w, daemon=True, args=(sm,))
+        s = Thread(target=w, daemon=True, args=(sm,lock))
         s.start()
-        atexit.register(ss)
-        while True:
-            if not s.is_alive():
-                s = Thread(target=w, daemon=True, args=(sm,))
-                s.start()
-            time.sleep(5)
+        atexit.register(lock.release)
+
+            
         
-    else:pass
+    except filelock.Timeout as e:print('no lock')
