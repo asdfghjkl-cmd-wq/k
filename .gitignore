@@ -55,3 +55,10 @@ f/trash/ee4f0754795b42c189de6618d85f1449
 .idea/k.iml
 f/tests
 f/.admin_lock
+f/_dms/add_dns.sh
+f/_dms/docker-compose.yml
+Untitled-1.py
+f/_dms/mailserver.env
+f/_dms/postfix-main.cf
+f/_dms/dns_add.py
+f/_dms/sync_cert.sh
