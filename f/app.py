@@ -647,9 +647,15 @@ def _personal_root(username):
     return os.path.join(PRIVATE_ROOT, name)
 
 def _current_root():
-    """当前请求的盘根(共享盘或个人盘),在请求上下文内使用。"""
+    """当前请求的盘根(共享盘或个人盘),在请求上下文内使用。
+    个人盘根目录不存在时自动创建(用户首次进入 /p 即生效)。"""
     if getattr(g, 'scope', 'shared') == 'personal':
-        return _personal_root(session.get('user_id'))
+        root = _personal_root(session.get('user_id'))
+        try:
+            os.makedirs(root, exist_ok=True)
+        except OSError as e:
+            logging.error(f"创建个人盘目录失败: {root} ({e})")
+        return root
     return UPLOAD_DIR
 
 def _root_for_scope(scope, username):
