@@ -43,6 +43,18 @@ def compute_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _sha256_file(filepath: str, block_size: int = 1024 * 1024) -> str:
+    """分块计算文件哈希:避免大文件一次性读入内存(OOM)。"""
+    hasher = hashlib.sha256()
+    with open(filepath, 'rb') as f:
+        while True:
+            chunk = f.read(block_size)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
 def send_file(sock: socket.socket, filepath: str, block_size: int = 1024 * 1024) -> bool:
     """
     发送端：将文件分块发送至对端。
@@ -55,8 +67,7 @@ def send_file(sock: socket.socket, filepath: str, block_size: int = 1024 * 1024)
     """
     filename = os.path.basename(filepath)
     file_size = os.path.getsize(filepath)
-    with open(filepath, 'rb') as f:
-        file_hash = compute_hash(f.read())
+    file_hash = _sha256_file(filepath)
     total_blocks = (file_size + block_size - 1) // block_size + 1
 
     try:
@@ -141,6 +152,14 @@ def recv_file(sock: socket.socket, save_dir: str = '.', display = False, block_s
         if max_size is not None and file_size > max_size:
             send_json(sock, {"type": "failed", "reason": "file too large"})
             return False
+        # 对端参数校验:块大小限幅、块数必须与文件大小自洽,防止恶意申报海量块
+        if not (1024 <= block_size <= 64 * 1024 * 1024):
+            send_json(sock, {"type": "failed", "reason": "block size invalid"})
+            return False
+        expected_blocks = (file_size + block_size - 1) // block_size + 1
+        if total_blocks != expected_blocks:
+            send_json(sock, {"type": "failed", "reason": "invalid block count"})
+            return False
 
         os.makedirs(save_dir, exist_ok=True)
         temp_dir = os.path.join(save_dir, f"{filename}.parts")
@@ -197,6 +216,7 @@ def recv_file(sock: socket.socket, save_dir: str = '.', display = False, block_s
                 block_path = os.path.join(temp_dir, f"{i}.block")
                 if not os.path.exists(block_path):
                     send_json(sock, {"type": "failed", "reason": "missing blocks"})
+                    shutil.rmtree(temp_dir, ignore_errors=True)   # 终局失败,清理残留
                     return False
                 with open(block_path, 'rb') as bf:
                     shutil.copyfileobj(bf, out_f)
@@ -216,6 +236,8 @@ def recv_file(sock: socket.socket, save_dir: str = '.', display = False, block_s
             send_json(sock, {"type": "success"})
             return True
         else:
+            # 终局失败:数据已坏,保留 .parts 无意义,清理避免磁盘残留
+            shutil.rmtree(temp_dir, ignore_errors=True)
             send_json(sock, {"type": "failed", "reason": "hash mismatch"})
             return False
 
